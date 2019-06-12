@@ -7,6 +7,6 @@ The main Python library that is used in the interactive tool creation is Plotly 
 
 The current created charts are:
 
-	-Shear flow discretization
+-Shear flow discretization
 
-	This chart shows the shear flow obtained from a static ideal analysis in various cross sections (I-beam, C-beam, T-beam,...) side-by-side with the shear flow obtained from a lumped area discretization. It allows to visualize the effect of discretizing the cross section in 1-dimensional elements as far as the shear flow is concerned. Variable cross-section dimensions may be introduced as well as various levels of discretization refinement.
+This chart shows the shear flow obtained from a static ideal analysis in various cross sections (I-beam, C-beam, T-beam,...) side-by-side with the shear flow obtained from a lumped area discretization. It allows to visualize the effect of discretizing the cross section in 1-dimensional elements as far as the shear flow is concerned. Variable cross-section dimensions may be introduced as well as various levels of discretization refinement.
