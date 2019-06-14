@@ -1,11 +1,33 @@
-import plotly as py
-import scipy.integrate as integrate
-import plotly.graph_objs as go
 import numpy as np
 import scipy.optimize as opt
+import scipy.integrate as integrate
+
 import itertools
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_daq as daq
+import pandas as pd
+import plotly.graph_objs as go
+
+#Define equation of a parabola for shear flow field plotting
+def eq_parab(p,e1,e2,vert): #Function used to calculate the parabola constants
+    a, b, c = p
+    eq1 = -e1[0] + a*e1[1]**2 + b*e1[1] + c
+    eq2 = -e2[0] + a*e2[1]**2 + b*e2[1] + c
+    eq3 = -vert[0] + a*vert[1]**2 + b*vert[1] + c
+    return (eq1,eq2,eq3)
 
 
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+df = pd.read_csv(
+    'https://gist.githubusercontent.com/chriddyp/' +
+    '5d1ea79569ed194d432e56108a04d188/raw/' +
+    'a9f9e8076b837d541398e999dcbac2b2826a81f8/'+
+    'gdp-life-exp-2007.csv')
 
 #Define input parameters
 V_y = 100 #N
@@ -18,38 +40,32 @@ h = 100. #mm
 w_u = 160. #mm
 w_l = 50. #mm
 
-
-#Calculate geometrical properties of section
-A_tot = w_u*t_f_u + t_w*(h - t_f_u - t_f_l) + w_l*t_f_l #mm2
-y_cdg = (w_u*t_f_u*(h - t_f_u/2.) + t_w*(h - t_f_u - t_f_l)*h/2. + w_l*t_f_l**2/2)/A_tot #mm w.r.t. bottom line
-I_x = 1./12.*w_u*t_f_u**3 + 1./12.*w_l*t_f_l**3 + w_u*t_f_u*(h/2. - t_f_u/2.)**2 + w_l*t_f_l*(h/2. - t_f_l/2.)**2 + 1./12.*t_w*(h - t_f_u - t_f_l)**3 #mm4
-I_y = 1./12.*t_f_u*w_u**3 + 1./12.*t_f_l*w_l**3 + 1./12.*(h-t_f_u-t_f_l)*t_w**3
-I_xy = 0.
-
-
-#Compute maximum shear flows on section
-q_flange_u = V_y*(t_f_u*w_u/2.*(h/2. - t_f_u/2.))/I_x #N/mm
-q_flange_l = V_y*(t_f_l*w_l/2.*(h/2. - t_f_l/2.))/I_x #N/mm
-
-Q_w_u = t_f_u*w_u*(h - y_cdg - t_f_u/2.) + (h - y_cdg - t_f_u)**2/2*t_w #mm3
-Q_w_l = t_f_l*w_l*(y_cdg - t_f_l/2.) + (y_cdg - t_f_l)**2/2*t_w #mm3
-
-q_web = V_y*Q_w_u/I_x #N/mm @ cog
-
-#Define equation of a parabola for shear flow field plotting
-def eq_parab(p,e1,e2,vert): #Function used to calculate the parabola constants
-    a, b, c = p
-    eq1 = -e1[0] + a*e1[1]**2 + b*e1[1] + c
-    eq2 = -e2[0] + a*e2[1]**2 + b*e2[1] + c
-    eq3 = -vert[0] + a*vert[1]**2 + b*vert[1] + c
-    return (eq1,eq2,eq3)
-
-#Loop over the various discretization points included in the slider
 num = 15
-data = []
-c = 0
-slider_range = np.arange(3,25,2) 
-for num in slider_range:
+def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
+
+    #Calculate geometrical properties of section
+    A_tot = w_u*t_f_u + t_w*(h - t_f_u - t_f_l) + w_l*t_f_l #mm2
+    y_cdg = (w_u*t_f_u*(h - t_f_u/2.) + t_w*(h - t_f_u - t_f_l)*h/2. + w_l*t_f_l**2/2)/A_tot #mm w.r.t. bottom line
+    I_x = 1./12.*w_u*t_f_u**3 + 1./12.*w_l*t_f_l**3 + w_u*t_f_u*(h/2. - t_f_u/2.)**2 + w_l*t_f_l*(h/2. - t_f_l/2.)**2 + 1./12.*t_w*(h - t_f_u - t_f_l)**3 #mm4
+    I_y = 1./12.*t_f_u*w_u**3 + 1./12.*t_f_l*w_l**3 + 1./12.*(h-t_f_u-t_f_l)*t_w**3
+    I_xy = 0.
+
+
+    #Compute maximum shear flows on section
+    q_flange_u = V_y*(t_f_u*w_u/2.*(h/2. - t_f_u/2.))/I_x #N/mm
+    q_flange_l = V_y*(t_f_l*w_l/2.*(h/2. - t_f_l/2.))/I_x #N/mm
+
+    Q_w_u = t_f_u*w_u*(h - y_cdg - t_f_u/2.) + (h - y_cdg - t_f_u)**2/2*t_w #mm3
+    Q_w_l = t_f_l*w_l*(y_cdg - t_f_l/2.) + (y_cdg - t_f_l)**2/2*t_w #mm3
+
+    q_web = V_y*Q_w_u/I_x #N/mm @ cog
+
+
+
+
+    data = []
+    c = 0
+
     #Set origin of coordinates for the left-most figure (non-idealized)
     origin_x = - 1.25*max([w_u,w_l,h/2.])/2.
     origin_y = 0.
@@ -138,7 +154,7 @@ for num in slider_range:
 
     #Solve for the parabola constants
     a_flow, b_flow, c_flow = opt.fsolve(eq_parab,[1/180.,-7./18.,713./36.],args=(e1_flow,e2_flow,vert_flow))
-    
+
     #Append constants at beginning and end of the list to offset the parabola as much as the shear flow value at the intersection with the flanges
     y_par_flow = np.linspace(origin_y+t_f_l/2.,origin_y+h-t_f_u/2.,21)
     x_par_flow = a_flow*(y_par_flow)**2 + b_flow*y_par_flow + c_flow
@@ -201,13 +217,13 @@ for num in slider_range:
     y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
     y_fl = list(itertools.chain.from_iterable(itertools.repeat(y_fl[x], 2) for x in range(len(y_fl))))
     y_w =list(itertools.chain.from_iterable(itertools.repeat(y_w[x], 2) for x in range(len(y_w))))
-    
+
     #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
     y_flange_u = np.linspace(0.,q_flange_u,num/2 + 1).tolist() + np.linspace(q_flange_u,0.,num/2 + 1).tolist()[1:]
     y_flange_l = np.linspace(0.,q_flange_l,num/2 + 1).tolist() + np.linspace(q_flange_l,0.,num/2 + 1).tolist()[1:]
 
     x_web = lambda y: a_flow*(y)**2 + b_flow*y + c_flow
-   
+
     #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
     q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
     q_fl_s = [(y_flange_l[x+1] + y_flange_l[x])/2 for x in range(len(y_flange_l) - 1)]
@@ -230,8 +246,8 @@ for num in slider_range:
 
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
-    	x = x_fl + x_w + x_fu,
-    	y = y_fl + y_w + y_fu,
+        x = x_fl + x_w + x_fu,
+        y = y_fl + y_w + y_fu,
         mode='lines+markers',
         name='Shear flow [N/mm]',
         hoverinfo = 'none',
@@ -286,87 +302,185 @@ for num in slider_range:
     data = data + data_temp
     c = c +1
 
-#Create figure object with all the data entitites
-fig = go.Figure(data=data)
+    #Define layout options of figure
+    layout = go.Layout(
+        showlegend=False,
+        hovermode= 'closest',
+        #Add annotations with arrows indicating the shear flow direction and the shear load application which are proportional to the cross-section size
+        annotations = [dict(x = origin_x - w_u/2. + w_u/10.,y = origin_y + h - t_f_u/2.,xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-w_u/4,  ay=0),
+                       dict(x = origin_x - w_u/2. + w_u/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-2.5*w_u/6., ay=0),
+                       dict(x = origin_x - w_u/2. + w_u/2. - t_w/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-0.7*w_u, ay=0),
+                       dict(x = origin_x - w_u/2. +w_u - w_u/10., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=w_u/4, ay=0),
+                       dict(x = origin_x - w_u/2. + w_u - w_u/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=2.5*w_u/6., ay=0),
+                       dict(x = origin_x - w_u/2. + w_u/2. + t_w/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0.7*w_u, ay=0),
+                       
+                       dict(x = origin_x - w_l/2. + w_l/10.,y = origin_y + t_f_l/2.,xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-w_l/4,  ay=0),
+                       dict(x = origin_x - w_l/2. + w_l/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-2.5*w_l/6., ay=0),
+                       dict(x = origin_x - w_l/2. + w_l/2. - t_w/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-0.7*w_l, ay=0),
+                       dict(x = origin_x - w_l/2. +w_l - w_l/10., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=w_l/4, ay=0),
+                       dict(x = origin_x - w_l/2. + w_l - w_l/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=2.5*w_l/6., ay=0),
+                       dict(x = origin_x - w_l/2. + w_l/2. + t_w/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0.7*w_l, ay=0),
 
-#Define the steps in the slider
-num_steps = len(slider_range)
-steps = []
-c = 0
-for i in range(num_steps):
-    #Create a dictionary with the visibility of all the entitites
-    step = dict(
-        method = 'restyle', 
-        label = str(slider_range[i]), 
-        args = ['visible', [False] * len(fig.data)],
+                       dict(x = origin_x, y = origin_y + t_f_l, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.55*h ),
+                       dict(x = origin_x, y = origin_y + 0.775*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.55*h ),
+                       dict(x = origin_x, y = origin_y + 0.225*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.65*h ),
+                       dict(x = origin_x, y = origin_y + 0.6*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.65*h ),
+                       dict(x = origin_x, y = origin_y + 0.4*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.75*h ),
+
+                       dict(x = origin_x, y = y_cdg + t_w/4., xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 16 ),showarrow = True, arrowhead=2, arrowsize=2, arrowwidth=1, arrowcolor='black', ax=0., ay= -h/2., xanchor = "center" ) ],
+        #Define axes visibility properties
+        xaxis=dict(
+            autorange=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            ticks='',
+            range=[-1.5*max([w_u,w_l]), 1.5*max([w_u,w_l])],
+            showticklabels=False
+        ),
+        yaxis=dict(
+            autorange=False,
+            showgrid=False,
+            zeroline=False,
+            showline=False,
+            ticks='',
+            range=[-0.2*h, 1.2*h],
+            scaleanchor="x", 
+            scaleratio=1,
+            showticklabels=False
+        )
     )
-    #Make the corresponding entities associated with a step visible when the slider toggles them
-    for j in np.arange(0 + 9*c ,9 + 9*c ,1):
-        step['args'][1][j] = True # Toggle i'th trace to "visible"
-    steps.append(step)
-    c = c +1
 
-#Initiliaze slider
-sliders = [dict(
-    active = 0,
-    currentvalue = {"prefix": "Discretization number: "},
-    pad = {"t": 0},
-    steps = steps
-)]
+    return (data, layout)
 
-#Define layout options of figure
-layout = go.Layout(
-	showlegend=False,
-	hovermode= 'closest',
-    #Add annotations with arrows indicating the shear flow direction and the shear load application which are proportional to the cross-section size
-	annotations = [dict(x = origin_x - w_u/2. + w_u/10.,y = origin_y + h - t_f_u/2.,xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-w_u/4,  ay=0),
-				   dict(x = origin_x - w_u/2. + w_u/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-2.5*w_u/6., ay=0),
-				   dict(x = origin_x - w_u/2. + w_u/2. - t_w/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-0.7*w_u, ay=0),
-				   dict(x = origin_x - w_u/2. +w_u - w_u/10., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=w_u/4, ay=0),
-				   dict(x = origin_x - w_u/2. + w_u - w_u/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=2.5*w_u/6., ay=0),
-				   dict(x = origin_x - w_u/2. + w_u/2. + t_w/4., y = origin_y + h - t_f_u/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0.7*w_u, ay=0),
-				   
-				   dict(x = origin_x - w_l/2. + w_l/10.,y = origin_y + t_f_l/2.,xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-w_l/4,  ay=0),
-				   dict(x = origin_x - w_l/2. + w_l/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-2.5*w_l/6., ay=0),
-				   dict(x = origin_x - w_l/2. + w_l/2. - t_w/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=-0.7*w_l, ay=0),
-				   dict(x = origin_x - w_l/2. +w_l - w_l/10., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=w_l/4, ay=0),
-				   dict(x = origin_x - w_l/2. + w_l - w_l/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=2.5*w_l/6., ay=0),
-				   dict(x = origin_x - w_l/2. + w_l/2. + t_w/4., y = origin_y + t_f_l/2., xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0.7*w_l, ay=0),
+opts = [{'label': 'I Shape', 'value': 'I'},]
 
-				   dict(x = origin_x, y = origin_y + t_f_l, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.55*h ),
-				   dict(x = origin_x, y = origin_y + 0.775*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.55*h ),
-				   dict(x = origin_x, y = origin_y + 0.225*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.65*h ),
-				   dict(x = origin_x, y = origin_y + 0.6*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.65*h ),
-				   dict(x = origin_x, y = origin_y + 0.4*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -0.75*h ),
+data, layout = gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num)
 
-				   dict(x = origin_x, y = y_cdg + t_w/4., xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 16 ),showarrow = True, arrowhead=2, arrowsize=2, arrowwidth=1, arrowcolor='black', ax=0., ay= -h/2., xanchor = "center" ) ],
-    #Define axes visibility properties
-    xaxis=dict(
-        autorange=False,
-        showgrid=False,
-        zeroline=False,
-        showline=False,
-        ticks='',
-        range=[-1.5*max([w_u,w_l]), 1.5*max([w_u,w_l])],
-        showticklabels=False
+fig = go.Figure(data= data, layout = layout)
+
+app.layout = html.Div([
+    html.Div([html.Div([
+        html.Label("Choose cross-section type"),
+        dcc.Dropdown(id = 'opt', options = opts,
+                    value = 'I')
+            ], style = {'width': '168px',
+                        'fontSize' : '12px',
+                        'padding-left' : '100px',
+                        'display': 'table-cell'}),
+    html.Div([
+    html.Label("Define shear load (V) [N]"),
+    dcc.Input(
+        id='inp_V',
+        placeholder='Enter a value...',
+        type='number',
+        value=V_y)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '20px',
+                    'display': 'table-cell'}),
+    ]),
+    html.Div([
+    html.Label("Define section height (h) [mm]"),
+    dcc.Input(
+        id='inp_h',
+        placeholder='Enter a value...',
+        type='number',
+        value=h)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '100px',
+                    'display': 'table-cell'}),
+    html.Div([
+    html.Label("Define top width (w1) [mm]"),
+    dcc.Input(
+        id='inp_w1',
+        placeholder='Enter a value...',
+        type='number',
+        value=w_u)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '20px',
+                    'display': 'table-cell'}),
+    html.Div([
+    html.Label("Define bottom width (w2) [mm]"),
+    dcc.Input(
+        id='inp_w2',
+        placeholder='Enter a value...',
+        type='number',
+        value=w_l)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '20px',
+                    'display': 'table-cell'}),
+    html.Div([
+    html.Label("Define top thickness (t1) [mm]"),
+    dcc.Input(
+        id='inp_t1',
+        placeholder='Enter a value...',
+        type='number',
+        value=t_f_u)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '20px',
+                    'display': 'table-cell'}),
+    html.Div([
+    html.Label("Define bottom thick. (t2) [mm]"),
+    dcc.Input(
+        id='inp_t2',
+        placeholder='Enter a value...',
+        type='number',
+        value=t_f_l)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '20px',
+                    'display': 'table-cell'}),
+    html.Div([
+    html.Label("Define web thickness (t3) [mm]"),
+    dcc.Input(
+        id='inp_t3',
+        placeholder='Enter a value...',
+        type='number',
+        value=t_w)
+        ], style = {'width': '50px',
+                    'fontSize' : '12px',
+                    'padding-left' : '20px',
+                    'display': 'table-cell'}),
+    dcc.Graph(
+        id='flow',
+        figure=fig
     ),
-    yaxis=dict(
-        autorange=False,
-        showgrid=False,
-        zeroline=False,
-        showline=False,
-        ticks='',
-        range=[-0.2*h, 1.2*h],
-		scaleanchor="x", 
-		scaleratio=1,
-        showticklabels=False
-    ),
-    sliders=sliders
-)
+    html.Div([
+    html.Label('Define discretization'),
+    dcc.Slider(id='slider',min=3,max=21,step=2,value=7,
+    marks={i: '{}'.format(i) if i == 3 else str(i) for i in np.arange(3, 23,2)},
+    ),],
+        style = {'width' : '80%',
+                'fontSize' : '12px',
+                'padding-left' : '100px',
+                'display': 'inline-block'}
+        
+        ),
+        html.Div(id='slider-output-container')
+    ])
 
-#Add layout properties to figure object
-fig.layout=layout
 
-#Plot and save the figure object
-py.offline.plot(fig,filename='flow.html')
+@app.callback(
+    dash.dependencies.Output('flow', 'figure'),
+    [dash.dependencies.Input('slider', 'value'),
+    dash.dependencies.Input('opt', 'value'),
+    dash.dependencies.Input('inp_V', 'value'),
+    dash.dependencies.Input('inp_h', 'value'),
+    dash.dependencies.Input('inp_w1', 'value'),
+    dash.dependencies.Input('inp_w2', 'value'),
+    dash.dependencies.Input('inp_t1', 'value'),
+    dash.dependencies.Input('inp_t2', 'value'),
+    dash.dependencies.Input('inp_t3', 'value')])
 
+def update_output(input1,input2,input3,input4,input5,input6,input7,input8,input9):
+    data, layout = gen_data_i_beam(input3,V_x,input9,input7,input8,input4,input5,input6,input1)
+    fig = go.Figure(data = data, layout = layout)
+    return fig
+
+if __name__ == '__main__':
+    app.run_server(debug=True)

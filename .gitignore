@@ -3,3 +3,5 @@
 *.docx
 *.xlsx
 *.log
+test*.py
+test*.html
