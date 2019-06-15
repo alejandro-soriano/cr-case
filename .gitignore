@@ -5,3 +5,6 @@
 *.log
 test*.py
 test*.html
+venv
+.DS_Store
+.env
