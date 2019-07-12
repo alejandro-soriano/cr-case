@@ -13,16 +13,19 @@ The shear flow is the most common way to conceptualize the mechanical response i
 
 The shear flow through a section of thickness t is calculated using the following equation ([1],[2]):
 
-![continuous equation](/resources/eq_cont.PNG | width=100)
+![continuous equation](/resources/eq_cont.PNG)
 
 where Vx and Vy are the shear forces perpendicular to the neutral axisx; Ix, Iy and Ixy are the second moments of area about the neutral axis; and x and y are the distances from the section coordinate to the centroid of the cross-section.
 
 When discretizing the section a discretized version of the shear flow equation is used:
 
+![discrete equation](/resources/eq_disc.PNG)
 
 where Br are the equivalent contributing areas corresponding to each of the discretization points. These boom areas are calculated upon the force resultant equilibrium of the forces acting at each discretization point in the direction of interest:
 
+![b1](/resources/eq_b1.PNG)
 
+![b2](/resources/eq_b2.PNG)
 
 ## Usage
 
