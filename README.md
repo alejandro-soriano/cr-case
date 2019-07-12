@@ -13,7 +13,7 @@ The shear flow is the most common way to conceptualize the mechanical response i
 
 The shear flow through a section of thickness t is calculated using the following equation ([1],[2]):
 
-[[https://github.com/alejandro-soriano/cr-case/blob/master/resources/eq_cont.png ]]
+[[https://github.com/alejandro-soriano/cr-case/blob/master/resources/eq_cont.png]]
 
 where Vx and Vy are the shear forces perpendicular to the neutral axisx; Ix, Iy and Ixy are the second moments of area about the neutral axis; and x and y are the distances from the section coordinate to the centroid of the cross-section.
 
