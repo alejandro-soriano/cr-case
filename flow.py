@@ -282,6 +282,12 @@ output_slider = html.Div(id='slider-output-container')
 
 
 app.layout = html.Div([
+    html.Div([html.H4("Shear Flow App")], style={'font-size': '12px', 'textAlign': "left", "padding-left": '100px'}),
+    html.Div(["Calculates and draws the shear flow field for various engineering cross-sections. Having chosen a section \
+        the shear flow is calculated according to its linear exact solution in the continous form. An approximation based \
+        on a defined discretization level is presented to the side. The app supports symmetric and non-symmetric cross-sections. \
+        More information ",html.A('here', href='https://github.com/alejandro-soriano/cr-case'), "."], style={'width': '85%', 'textAlign': "left", "padding-left": '100px'}),
+    html.Div([html.Hr()], style={"margin-before": '10px'}),
     html.Div([drop_section,input_V,]),
     html.Div(
         id='controls-container'
