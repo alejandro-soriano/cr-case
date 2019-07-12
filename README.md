@@ -7,25 +7,27 @@ The main Python libraries that are used in the interactive tool creation are Plo
 
 ## Shear Flow Discretization [flow]
 
-This chart shows the shear flow obtained from a static ideal analysis in various cross sections (I-beam, T-beam, C-beam, U-beam, rectangular and open circular) side-by-side with the shear flow obtained from a lumped area discretization. It allows to visualize the effect of discretizing the cross section in 1-dimensional elements as far as the shear flow is concerned. Variable cross-section dimensions may be introduced as well as various levels of discretization refinement.
+This chart shows the shear flow obtained from a static ideal analysis in various cross sections (*I-beam*, *T-beam*, *C-beam*, *U-beam*, rectangular and open circular) side-by-side with the shear flow obtained from a lumped area discretization. It allows to visualize the effect of discretizing the cross section in 1-dimensional elements as far as the shear flow is concerned. Variable cross-section dimensions may be introduced as well as various levels of discretization refinement.
 
 The shear flow is the most common way to conceptualize the mechanical response in a thin-walled section when a shear force is applied. The shear flow is obtained as the shear stress per given thickness which accordingly has the dimensions of force per unit of length. For a given structure the shear load is considered to be applied at the shear center, i.e. the point in space at which the shear force causes no torsional deformation of the section.
 
-The shear flow through a section of thickness t is calculated using the following equation ([1],[2]):
+The shear flow through a section of thickness t is calculated using the following equation (*[1]*,*[2]*):
 
 ![continuous equation](/resources/eq_cont.PNG)
 
-where Vx and Vy are the shear forces perpendicular to the neutral axisx; Ix, Iy and Ixy are the second moments of area about the neutral axis; and x and y are the distances from the section coordinate to the centroid of the cross-section.
+where *q1 - q2* is the shear flow between two points 1 and 2, *Vx* and *Vy* are the shear forces perpendicular to the neutral axisx; *Ix*, *Iy* and *Ixy* are the second moments of area about the neutral axis; and *x* and *y* are the distances from the section coordinate to the centroid of the cross-section.
 
 When discretizing the section a discretized version of the shear flow equation is used:
 
 ![discrete equation](/resources/eq_disc.PNG)
 
-where Br are the equivalent contributing areas corresponding to each of the discretization points. These boom areas are calculated upon the force resultant equilibrium of the forces acting at each discretization point in the direction of interest:
+where *Br* are the equivalent contributing areas corresponding to each of the discretization points. These boom areas are calculated upon the force resultant equilibrium acting at each discretization point in the direction of interest:
 
 ![b1](/resources/b1.PNG)
 
 ![b2](/resources/b2.PNG)
+
+where *tskin* is the thickness *t* of the member, *b* is the distance between discretization points and the ratio of stresses is the one representative for shear loading.
 
 ## Usage
 
