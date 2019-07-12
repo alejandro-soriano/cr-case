@@ -23,9 +23,9 @@ When discretizing the section a discretized version of the shear flow equation i
 
 where Br are the equivalent contributing areas corresponding to each of the discretization points. These boom areas are calculated upon the force resultant equilibrium of the forces acting at each discretization point in the direction of interest:
 
-![b1](/resources/eq_b1.PNG)
+![b1](/resources/b1.PNG)
 
-![b2](/resources/eq_b2.PNG)
+![b2](/resources/b2.PNG)
 
 ## Usage
 
