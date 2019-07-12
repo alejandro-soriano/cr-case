@@ -2,6 +2,7 @@ import numpy as np
 import math
 import scipy.optimize as opt
 import scipy.integrate as integrate
+import scipy.linalg as linalg
 import itertools
 
 import plotly.graph_objs as go
@@ -28,9 +29,10 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
     I_xy = 0.
 
 
-    #Compute maximum shear flows on section
+    #Compute shear flows on section
     q_flange_u = V_y*(t_f_u*w_u/2.*(h - y_cdg - t_f_u/2.))/I_x #N/mm
     q_flange_l = V_y*(t_f_l*w_l/2.*(y_cdg - t_f_l/2.))/I_x #N/mm
+
 
     Q_w_u = t_f_u*w_u*(h - y_cdg - t_f_u/2.) + (h - y_cdg - t_f_u)**2/2*t_w #mm3
     Q_w_l = t_f_l*w_l*(y_cdg - t_f_l/2.) + (y_cdg - t_f_l)**2/2*t_w #mm3
@@ -64,7 +66,8 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
 
     x_sc = 0.
     y_sc = h - h*t_f_l/I_y*w_l**3/12
-    #Entity that plots the location of the shear load application
+
+    #Entity that plots the location of the shear load application (shear center)
     trace1_sc = go.Scatter(
         x = [origin_x],
         y = [origin_y + y_sc - t_f_l/2.*(y_sc - h/2.)/h*2.],
@@ -72,9 +75,10 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
         hovertext = r'Shear Center <br> x_sc = {0:.2f} <br> y_sc = {1:.2f} <br> w.r.t.bottom & plane of symmetry'.format(x_sc,round(y_sc - t_f_l/2.*(y_sc - h/2.)/h*2.,1)),
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'blue', size = 10),
         visible=[True if c is 0 else False][0])
-
+    
+    #Entity that plots the location of the center of gravity
     trace1_cg = go.Scatter(
         x = [origin_x],
         y = [origin_y + y_cdg],
@@ -82,9 +86,20 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
         name = 'Center of Gravity',
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'purple', size = 10),
         visible=[True if c is 0 else False][0])
-
+    
+    #Entity that plots the neutral axis
+    trace1_na = go.Scatter(
+        x = np.linspace(origin_x - max([w_u,w_l])/4.,origin_x+ max([w_u,w_l])/4.,21),
+        y = np.linspace(origin_y + y_cdg, origin_y + y_cdg, 21),
+        name = 'Neutral Axis',
+        mode='lines',
+        hoveron = 'points',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('purple'),
+            dash = 'dashdot'))
 
     #Determination of the shear flow fields in the upper and lower flanges of the I-section
     y_flange_u = np.linspace(0.,q_flange_u,11).tolist() + np.linspace(q_flange_u,0.,11).tolist()
@@ -129,7 +144,6 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
 
     #Append constants at beginning and end of the list to offset the parabola as much as the shear flow value at the intersection with the flanges
     y_par_flow = np.linspace(origin_y+t_f_l/2.,origin_y+h-t_f_u/2.,21)
-    # x_par_flow = a_flow*(y_par_flow)**2 + b_flow*y_par_flow + c_flow
     x_par_flow = q_web_fun(y_par_flow)
 
     x_par_coord = [origin_x - max([w_u/2.,w_l/2.]) - x_par_flow[x]*h/5./max([q_flange_u,q_flange_l]) for x in range(len(x_par_flow))]
@@ -146,14 +160,12 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
     a_coord, b_coord, c_coord = opt.fsolve(eq_parab,[1/180.,-5./18.,713./36.],args=(e1_coord,e2_coord,vert_coord))
 
     y_par = np.linspace(origin_y+t_f_l/2.,origin_y+h-t_f_u/2.,21)
-    # x_par_coord = a_coord*(y_par)**2 + b_coord*y_par + c_coord
 
     #Append constants at beginning and end of the list to offset the parabola as much as the shear flow value at the intersection with the flanges
     y_par = y_par.tolist()
     y_par.append(origin_y+h-t_f_u/2.)
     y_par.insert(0,origin_y+t_f_l/2.)
 
-    # x_par_coord = x_par_coord.tolist()
     x_par_coord.append(origin_x - max([w_u/2.,w_l/2.]))
     x_par_coord.insert(0,origin_x - max([w_u/2.,w_l/2.]))
 
@@ -208,7 +220,6 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
     q_w_s =  [integrate.quad(x_web,y_w[2*x],y_w[2*x+2])[0]/(y_w[2*x + 2] - y_w[2*x]) for x in range(int(len(y_w)/2 -1))]
 
     q_w_total = integrate.quad(x_web,y_w[0],y_w[-1])[0]
-    # print(q_w_total)
 
     q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
     q_fl = [0.] + [q_fl_s[int(x/2)] for x in range(int(len(x_fl)-2))] + [0.]
@@ -225,13 +236,57 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
     q_w[0] = q_w_s[0]
     q_w[-1] = q_w_s[-1]
 
+    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+    A_fu = np.zeros(num)
+    A_fl = np.zeros(num)
+    A_w = np.zeros(num+1)
+
+    y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+    x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+    x_fl_A = np.linspace(origin_xd ,origin_xd+w_l/2.,num).tolist()
+
+    q_fupper = lambda s: q_flange_u/w_u*2*s
+
+    for x in range(0,math.ceil(num/2) - 1):
+        A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+        A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        
+        A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+        A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        
+        A_fl[x] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+        A_fl[x +1] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+        
+        A_fl[num - x -1] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+        A_fl[num - x -2] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+
+
+    for x in range(0, num):
+        A_w[x] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+        A_w[x+1] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+
+      
+    A_fu[math.ceil(num/2) - 1] = A_fu[math.ceil(num/2) - 1] + A_w[-1]
+    A_fl[math.ceil(num/2) - 1] = A_fl[math.ceil(num/2) - 1] + A_w[0]
+    A_w[-1] = A_fu[math.ceil(num/2) - 1]
+    A_w[0] = A_fl[math.ceil(num/2) - 1]
+
+    A_fu = A_fu.tolist()
+    A_fl = A_fl.tolist()
+    A_w = A_w.tolist()
+
+    res_A = A_fl + A_w + A_fu
+    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
         x = x_fl + x_w + x_fu,
         y = y_fl + y_w + y_fu,
         mode='lines+markers',
         name='Shear flow [N/mm]',
-        hoverinfo = 'none',
+        hoverinfo = 'text',
+        hoveron = 'points',
+        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
         line=dict(color='grey'),
         visible = [True if c is 0 else False][0])
 
@@ -278,7 +333,7 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
         visible = [True if c is 0 else False][0])
 
     #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg, trace2, trace3, trace4, trace1b, trace2b, trace3b, trace4b]
+    data_temp = [trace1, trace1_sc, trace1_cg,trace1_na, trace2, trace3, trace4, trace1b, trace2b, trace3b, trace4b]
 
     data = data + data_temp
     c = c +1
@@ -308,7 +363,7 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
                        dict(x = origin_x, y = origin_y + 0.65*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -36 ),
                        dict(x = origin_x, y = origin_y + 0.37*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -54 ),
 
-                       dict(x = origin_x + 3*t_w, y = origin_y + y_sc - t_f_l/2.*(y_sc - h/2.)/h*2. - 0.1*h, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
+                       dict(x = origin_x, y = origin_y + y_sc - t_f_l/2.*(y_sc - h/2.)/h*2. + 0.05*h, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
         #Define axes visibility properties
         xaxis=dict(
             autorange=False,
@@ -379,7 +434,7 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
     x_sc = 0.
     y_sc = h - t_f_u/2.
 
-    #Entity that plots the location of the shear load application
+    #Entity that plots the location of the shear load application (shear center)
     trace1_sc = go.Scatter(
         x = [origin_x],
         y = [origin_y + h - t_f_u/2.],
@@ -387,9 +442,10 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
         hovertext = r'Shear Center <br> x_sc = {0:.2f} <br> y_sc = {1:.2f} <br> w.r.t.bottom & plane of symmetry'.format(x_sc,y_sc),
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'blue', size = 10),
         visible=[True if c is 0 else False][0])
-
+    
+    #Entity that plots the location of the center of gravity
     trace1_cg = go.Scatter(
         x = [origin_x],
         y = [origin_y + y_cdg],
@@ -397,13 +453,24 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
         name = 'Center of Gravity',
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'purple', size = 10),
         visible=[True if c is 0 else False][0])
+    
+    #Entity that plots the neutral axis
+    trace1_na = go.Scatter(
+        x = np.linspace(origin_x - w_u/4.,origin_x+ w_u/4.,21),
+        y = np.linspace(origin_y + y_cdg, origin_y + y_cdg, 21),
+        name = 'Neutral Axis',
+        mode='lines',
+        hoveron = 'points',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('purple'),
+            dash = 'dashdot'))
 
 
     #Determination of the shear flow fields in the upper and lower flanges of the I-section
     y_flange_u = np.linspace(0.,q_flange_u,11).tolist() + np.linspace(q_flange_u,0.,11).tolist()
-    # y_flange_l = np.linspace(0.,q_flange_l,11).tolist() + np.linspace(q_flange_l,0.,11).tolist()
 
     #Entity that plots the upper flange shear flow
     trace2 = go.Scatter(
@@ -430,7 +497,6 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
 
     #Append constants at beginning and end of the list to offset the parabola as much as the shear flow value at the intersection with the flanges
     y_par_flow = np.linspace(origin_y,origin_y+h-t_f_u/2.,21)
-    # x_par_flow = a_flow*(y_par_flow)**2 + b_flow*y_par_flow + c_flow
     x_par_flow = q_web_fun(y_par_flow)
 
     x_par_coord = [origin_x - max([w_u/2.,w_u/2.]) - x_par_flow[x]*h/5./max([q_flange_u]) for x in range(len(x_par_flow))]
@@ -443,6 +509,7 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
     e1_coord = [origin_x - max([w_u/2.,w_u/2.]) - h/5.*0./max([q_flange_u]),origin_y]
     e2_coord = [origin_x - max([w_u/2.,w_u/2.])- h/5.*q_flange_u/max([q_flange_u]),origin_y + h - t_f_u/2.]
     vert_coord = [origin_x -max([w_u/2.,w_u/2.])- h/5.*q_web/max([q_flange_u]),origin_y + y_cdg]
+    
     #Solve for the parabola constants
     a_coord, b_coord, c_coord = opt.fsolve(eq_parab,[1/180.,-5./18.,713./36.],args=(e1_coord,e2_coord,vert_coord))
     y_par = np.linspace(origin_y,origin_y+h-t_f_u/2.,21)
@@ -500,23 +567,47 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
 
     #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
     q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
-    # q_fl_s = [(y_flange_l[x+1] + y_flange_l[x])/2 for x in range(len(y_flange_l) - 1)]
     q_w_s =  [integrate.quad(x_web,y_w[2*x],y_w[2*x+2])[0]/(y_w[2*x + 2] - y_w[2*x]) for x in range(int(len(y_w)/2 -1))]
 
     q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
-    # q_fl = [0.] + [q_fl_s[int(x/2)] for x in range(int(len(x_fl)-2))] + [0.]
     q_w = [0.] + [q_w_s[int(x/2)] for x in range(int(len(x_w)-2))] + [0.]
 
     q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u]) for x in q_fu]
-    # q_fl_pl = [x + origin_y  - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fl]
     q_w_pl = [origin_xd -max([w_u/2.,w_u/2.])- h/5.*x/max([q_flange_u]) for x in q_w]
 
     q_fu[0] = q_fu_s[0]
     q_fu[-1] = q_fu_s[-1]
-    # q_fl[0] = q_fl_s[0]
-    # q_fl[-1] = q_fl_s[-1]
     q_w[0] = q_w_s[0]
     q_w[-1] = q_w_s[-1]
+
+    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+    A_fu = np.zeros(num)
+    A_w = np.zeros(num+1)
+
+    y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+    x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+
+    q_fupper = lambda s: q_flange_u/w_u*2*s
+
+    for x in range(0,math.ceil(num/2) - 1):
+        A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+        A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        
+        A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+        A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+
+    for x in range(0, num):
+        A_w[x] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+        A_w[x+1] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+    
+    A_fu[math.ceil(num/2) - 1] = A_fu[math.ceil(num/2) - 1] + A_w[-1]
+    A_w[-1] = A_fu[math.ceil(num/2) - 1]
+
+    A_fu = A_fu.tolist()
+    A_w = A_w.tolist()
+
+    res_A = A_w + A_fu
+    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
 
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
@@ -524,7 +615,9 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
         y =  y_w + y_fu,
         mode='lines+markers',
         name='Shear flow [N/mm]',
-        hoverinfo = 'none',
+        hoverinfo = 'text',
+        hoveron = 'points',
+        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
         line=dict(color='grey'),
         visible = [True if c is 0 else False][0])
 
@@ -557,7 +650,7 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
         visible = [True if c is 0 else False][0])
 
     #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg, trace2, trace4, trace1b, trace2b, trace4b]
+    data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2, trace4, trace1b, trace2b, trace4b]
 
     data = data + data_temp
     c = c +1
@@ -580,7 +673,7 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
                        dict(x = origin_x, y = origin_y + 0.65*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -36 ),
                        dict(x = origin_x, y = origin_y + 0.37*h, xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax=0., ay= -54 ),
 
-                       dict(x = origin_x + 3*t_w, y = origin_y + y_sc - 0.1*h, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
+                       dict(x = origin_x, y = origin_y + y_sc + 0.05*h, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
       #Define axes visibility properties
         xaxis=dict(
             autorange=True,
@@ -608,7 +701,7 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
 
 def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
 
-
+    #Calculate geometrical properties of section
     A_tot = w*t_f_u + t_w_l*(h_l - t_f_u) + t_w_r*(h_r - t_f_u)
     y_cdg = (t_f_u*w*w/2. + t_w_r*h_r*w)/(t_f_u*w + t_w_r*h_r + t_w_l*h_l)
     x_cdg = (t_w_l*h_l*h_l/2. + t_w_r*h_r*h_r/2.)/(t_f_u*w + t_w_r*h_r + t_w_l*h_l)
@@ -616,7 +709,8 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     I_x = t_w_l*h_l*y_cdg**2 + (t_f_u*w**3/12) + t_f_u*w*(w/2. - y_cdg)**2 + t_w_r*h_r*(w - y_cdg)**2
     I_y = (t_w_l*h_l**3/12.) + t_w_l*h_l*(h_l/2. - x_cdg)**2 + t_f_u*w*x_cdg**2 + (t_w_r*h_r**3/12.) + t_w_r*h_r*(h_r/2. - x_cdg)**2
     I_xy = t_w_l*h_l*(h_l/2. - x_cdg)*y_cdg + t_f_u*w*(-w/2. + y_cdg)*(-x_cdg) + t_w_r*h_r*(h_r/2. - x_cdg)*(-w + y_cdg)
-
+   
+    #Compute maximum shear flows on section
     q43_y = lambda s: V_y*(I_xy/(I_x*I_y - I_xy**2)*t_w_r*((h_r - x_cdg)*s - s**2/2.) + I_y/(I_x*I_y - I_xy**2)*t_w_r*(w - y_cdg)*s)
     q43_x = lambda s: V_x*(I_x/(I_x*I_y - I_xy**2)*t_w_r*((h_r - x_cdg)*s - s**2/2.) + I_xy/(I_x*I_y - I_xy**2)*t_w_r*(w - y_cdg)*s)
 
@@ -627,11 +721,8 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     q12_y = lambda s: V_y*(-I_xy/(I_x*I_y - I_xy**2)*t_w_l*((h_l - x_cdg)*s - s**2/2.) + I_y/(I_x*I_y - I_xy**2)*t_w_l*(y_cdg)*s)
     q12_x = lambda s: V_x*(-I_x/(I_x*I_y - I_xy**2)*t_w_l*((h_l - x_cdg)*s - s**2/2.) + I_xy/(I_x*I_y - I_xy**2)*t_w_l*(y_cdg)*s)
 
-    q23_y = lambda s: V_x*(I_xy/(I_x*I_y - I_xy**2)*t_f_u*(-(x_cdg)*s) - I_y/(I_x*I_y - I_xy**2)*t_f_u*(-(w - y_cdg)*s + s**2/2.)) + q43_y(h_r)
+    q23_y = lambda s: V_y*(I_xy/(I_x*I_y - I_xy**2)*t_f_u*(-(x_cdg)*s) - I_y/(I_x*I_y - I_xy**2)*t_f_u*(-(w - y_cdg)*s + s**2/2.)) + q43_y(h_r)
     q23_x = lambda s: V_x*(I_x/(I_x*I_y - I_xy**2)*t_f_u*(-(x_cdg)*s) - I_xy/(I_x*I_y - I_xy**2)*t_f_u*(-(w - y_cdg)*s + s**2/2.)) + q43_x(h_r)
-
-    # #Calculate geometrical properties of section
-    # #Compute maximum shear flows on section
 
     q_web_fun_l = lambda y: V_l*(t_f_u*(w/2. + x_sc)*(h_l - y_cdg_l - t_f_u/2.) + (h_l - y - t_f_u)*t_w_l*(((h_l - t_f_u) + y)/2. - y_cdg_l))/I_x_l
 
@@ -660,7 +751,7 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         line=dict(color='black'),
         visible=[True if c is 0 else False][0])
 
-    #Entity that plots the location of the shear load application
+    #Entity that plots the location of the shear load application (shear center)
     trace1_sc = go.Scatter(
         x = [origin_x  - y_sc + t_f_u/2.],
         y = [origin_y + x_sc - t_w_r/2.*(x_sc - w/2.)/w*2.],
@@ -668,9 +759,10 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         hovertext = r'Shear Center <br> x_sc = {0:.2f} <br> y_sc = {1:.2f} <br> w.r.t. ext. of bottom flange & web'.format(y_sc,x_sc),
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'blue', size = 10),
         visible=[True if c is 0 else False][0])
-
+    
+    #Entity that plots the location of the center of gravity
     trace1_cg = go.Scatter(
         x = [origin_x + x_cdg],
         y = [origin_y + y_cdg],
@@ -678,15 +770,29 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         name = 'Center of Gravity',
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'purple', size = 10),
         visible=[True if c is 0 else False][0])
+    
+    #Entity that plots the neutral axis
+    phi = np.arctan((2*I_xy)/max([1e-05,(I_x - I_y)]))/2.
+
+    trace1_na = go.Scatter(
+        x = np.linspace(origin_x + x_cdg - max([h_l,h_r])/4.*np.cos(phi),origin_x + x_cdg + max([h_l,h_r])/4.*np.cos(phi),21),
+        y = np.linspace(origin_y + y_cdg - max([h_l,h_r])/4.*np.sin(phi), origin_y + y_cdg + max([h_l,h_r])/4.*np.sin(phi), 21),
+        name = 'Neutral Axis',
+        mode='lines',
+        hoveron = 'points',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('purple'),
+            dash = 'dashdot'))
 
     #Determination of the shear flow fields in the upper and lower flanges of the I-section    
     x_par_flow_f = np.linspace(0.,w,21)
-    y_par_flow_f = q23_y(x_par_flow_f)
+    y_par_flow_f = q23_y(x_par_flow_f[::-1])
 
 
-    y_par_coord_f = [origin_x - np.abs(y_par_flow_f[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l)]) for x in range(len(y_par_flow_f))]
+    y_par_coord_f = [origin_x - np.abs(y_par_flow_f[x])*max([h_l,h_r])/5./max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in range(len(y_par_flow_f))]
     y_par_flow_f = y_par_flow_f.tolist()
     y_par_flow_f.append(y_par_flow_f[-1])
     y_par_flow_f.insert(0,y_par_flow_f[0])
@@ -728,12 +834,12 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     y_par_flow_l = np.linspace(0.,h_l,21)
     x_par_flow_l = q12_y(y_par_flow_l)
 
-    x_par_coord_l = [origin_y - (x_par_flow_l[len(x_par_flow_l) - x -1])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l)]) for x in range(len(x_par_flow_l))]
+    x_par_coord_l = [origin_y - (x_par_flow_l[len(x_par_flow_l) - x -1])*max([h_l,h_r])/5./max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in range(len(x_par_flow_l))]
     x_par_flow_l = x_par_flow_l.tolist()
     x_par_flow_l.append(x_par_flow_l[-1])
     x_par_flow_l.insert(0,x_par_flow_l[0])
 
-    # #Points through which the parabola-shaped shear flow in the web goes
+    #Points through which the parabola-shaped shear flow in the web goes
     y_par_l = np.linspace(origin_x + t_f_u/2.,origin_x+h_l,21)
 
     #Points through which the parabola-shaped shear flow in the web goes
@@ -753,7 +859,7 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         name='Shear flow [N/mm]',
         hoverinfo = 'text',
         hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(-k) for k in x_par_flow_l],
+        hovertext = ['{0:.2f} N/mm'.format(k) for k in x_par_flow_l[::-1]],
         #hovertemplate = '%{hovertext:.2f}',
         fill = 'toself',
         line=dict(color='red'),
@@ -762,9 +868,8 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     #Append constants at beginning and end of the list to offset the parabola as much as the shear flow value at the intersection with the flanges
     y_par_flow_r = np.linspace(0 ,h_r,21)
     x_par_flow_r = q43_y(y_par_flow_r)
-    # print(x_par_flow_r)
 
-    x_par_coord_r = [origin_y + w + (x_par_flow_r[len(x_par_flow_r) - x - 1])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l)]) for x in range(len(x_par_flow_r))]
+    x_par_coord_r = [origin_y + w + (x_par_flow_r[len(x_par_flow_r) - x - 1])*max([h_l,h_r])/5./max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in range(len(x_par_flow_r))]
 
     x_par_flow_r = x_par_flow_r.tolist()
     x_par_flow_r.append(x_par_flow_r[-1])
@@ -778,7 +883,6 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     y_par_r.append(origin_x+h_r)
     y_par_r.insert(0,origin_x +t_f_u/2.)
 
-    # x_par_coord = x_par_coord.tolist()
     x_par_coord_r.append(origin_y + w)
     x_par_coord_r.insert(0,origin_y +  w)
 
@@ -790,7 +894,7 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         name='Shear flow [N/mm]',
         hoverinfo = 'text',
         hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(-k) for k in x_par_flow_r],
+        hovertext = ['{0:.2f} N/mm'.format(k) for k in x_par_flow_r[::-1]],
         #hovertemplate = '%{hovertext:.2f}',
         fill = 'toself',
         line=dict(color='red'),
@@ -804,12 +908,12 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     origin_yd = 0.
 
     #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num).tolist()
+    x_fu = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num+1).tolist()
     x_w_l =  np.linspace(origin_yd + t_w_l/2., origin_yd + t_w_l/2.,num+1).tolist()
     x_w_r =  np.linspace(origin_yd + w - t_w_r/2., origin_yd + w - t_w_r/2.,num+1).tolist()
 
 
-    y_fu = np.linspace(origin_xd + t_f_u/2., origin_xd + t_f_u/2.,num).tolist()
+    y_fu = np.linspace(origin_xd + t_f_u/2., origin_xd + t_f_u/2.,num+1).tolist()
     y_w_l =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_l,num+1).tolist()
     y_w_r =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_r,num+1).tolist()
 
@@ -822,7 +926,8 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
     y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
     
-    x_fu_int = np.linspace(0. ,max([1,w]),num).tolist()
+    x_fu_int = np.linspace(0. ,max([1,w]),num+1).tolist()
+    x_fu_int = x_fu_int[::-1]
     y_w_l_int =  np.linspace(0.,max([1,h_l]),num+1).tolist()
     y_w_r_int =  np.linspace(0.,max([1,h_r]),num+1).tolist()
 
@@ -832,7 +937,6 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
 
 
     #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-
     y_flange_u = q23_y
     x_web_l = q12_y
     x_web_r = q43_y
@@ -842,17 +946,13 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     q_w_l_s =  [integrate.quad(x_web_l,y_w_l_int[2*x],y_w_l_int[2*x+2])[0]/(y_w_l_int[2*x + 2] - y_w_l_int[2*x]) for x in range(int(len(y_w_l_int)/2 -1))]
     q_w_r_s =  [integrate.quad(x_web_r,y_w_r_int[2*x],y_w_r_int[2*x+2])[0]/(y_w_r_int[2*x + 2] - y_w_r_int[2*x]) for x in range(int(len(y_w_r_int)/2 -1))]
 
-    # print(q_w_l_s)
-
     q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
     q_w_l = [0.] + [q_w_l_s[int(x/2)] for x in range(int(len(x_w_l)-2))] + [0.]
     q_w_r = [0.] + [q_w_r_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
 
-
-
-    q_fu_pl = [np.abs(x) + origin_xd - max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l)]) for x in q_fu]
-    q_w_l_pl = [origin_yd - max([h_l,h_r])/5.*x/max([q43_x(h_r),q12_x(h_l)]) for x in q_w_l[::-1]]
-    q_w_r_pl = [origin_yd +w+ max([h_l,h_r])/5.*x/max([q43_x(h_r),q12_x(h_l)]) for x in q_w_r[::-1]]
+    q_fu_pl = [np.abs(x) + origin_xd - max([h_l,h_r])/5.*np.abs(x)/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_fu]
+    q_w_l_pl = [origin_yd - max([h_l,h_r])/5.*x/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_w_l[::-1]]
+    q_w_r_pl = [origin_yd +w+ max([h_l,h_r])/5.*x/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_w_r[::-1]]
 
     q_fu[0] = q_fu_s[0]
     q_fu[-1] = q_fu_s[-1]
@@ -861,6 +961,40 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     q_w_r[0] = q_w_r_s[0]
     q_w_r[-1] = q_w_r_s[-1]
 
+    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+    A_w_r = np.zeros(num+1)
+    A_w_l = np.zeros(num+1)
+    A_fu = np.zeros(num+1)
+    
+    y_w_l_A =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_l,num+1).tolist()
+    y_w_r_A =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_r,num+1).tolist()
+    x_fu_A = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num+1).tolist()
+
+    for x in range(0,num):
+        A_w_r[num - x] += t_w_r*h_r/(num -1)/6.*(2 + q43_y(y_w_r_A[x+1] - origin_xd)/q43_y(y_w_r_A[x] - origin_xd))
+        A_w_r[num - x -1] += t_w_r*h_r/(num -1)/6.*(2 + q43_y(y_w_r_A[x] - origin_xd)/q43_y(y_w_r_A[x+1] - origin_xd))
+
+        A_w_l[num - x] += t_w_l*h_l/(num -1)/6.*(2 + q12_y(y_w_l_A[x+1] - origin_xd)/q12_y(y_w_l_A[x] - origin_xd))
+        A_w_l[num - x -1] += t_w_l*h_l/(num -1)/6.*(2 + q12_y(y_w_l_A[x] - origin_xd)/q12_y(y_w_l_A[x+1] - origin_xd))
+
+   
+    for x in range(0, num):
+        A_fu[x] += t_f_u*w/(num+1)/6.*(2 + q23_y(x_fu_A[x+1] - origin_yd)/q23_y(x_fu_A[x] - origin_yd))
+        A_fu[x+1] += t_f_u*w/(num+1)/6.*(2 + q23_y(x_fu_A[x] - origin_yd)/q23_y(x_fu_A[x+1] - origin_yd))
+    
+    
+    A_w_r[0] = A_w_r[0] + A_fu[-1]
+    A_w_l[0] = A_w_l[0] + A_fu[0]
+    A_fu[-1] = A_w_r[0]
+    A_fu[0] = A_w_l[0]
+
+    A_w_r = A_w_r.tolist()
+    A_w_l = A_w_l.tolist()
+    A_fu = A_fu.tolist()
+
+    res_A = A_w_l + A_fu + A_w_r
+    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
 
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
@@ -868,7 +1002,9 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         y =  x_w_l + x_fu + x_w_r,
         mode='lines+markers',
         name='Shear flow [N/mm]',
-        hoverinfo = 'none',
+        hoverinfo = 'text',
+        hoveron = 'points',
+        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
         line=dict(color='grey'),
         visible = [True if c is 0 else False][0])
 
@@ -914,7 +1050,7 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         visible = [True if c is 0 else False][0])
 
     #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg, trace2_l, trace4_l, trace4_r, trace1b, trace2b, trace4b_l, trace4b_r]
+    data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1b, trace2b, trace4b_l, trace4b_r]
 
     data = data + data_temp
     c = c +1
@@ -1015,7 +1151,7 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
         line=dict(color='black'),
         visible=[True if c is 0 else False][0])
 
-    #Entity that plots the location of the shear load application
+    #Entity that plots the location of the shear load application (shear center)
     trace1_sc = go.Scatter(
         x = [origin_x],
         y = [y_cdg],
@@ -1023,8 +1159,20 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
         hovertext = 'Center of Gravity & <br> Shear Center <br> x_cog = {0:.2f} <br> y_cog = {1:.2f} <br> w.r.t. ext. of bottom flange & left web'.format(x_cdg,y_cdg),
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'blue', size = 10),
         visible=[True if c is 0 else False][0])
+    
+    #Entity that plots the neutral axis
+    trace1_na = go.Scatter(
+        x = np.linspace(origin_x - w_u/4.,origin_x+ w_u/4.,21),
+        y = np.linspace(origin_y + y_cdg, origin_y + y_cdg, 21),
+        name = 'Neutral Axis',
+        mode='lines',
+        hoveron = 'points',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('purple'),
+            dash = 'dashdot'))
 
     #Determination of the shear flow fields in the upper and lower flanges of the I-section
     y_flange_u = np.linspace(q_flange_u,0.,11).tolist() + np.linspace(0.,q_flange_u,11).tolist()
@@ -1192,13 +1340,69 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
     q_wr[0] = q_wr_s[0]
     q_wr[-1] = q_wr_s[-1]
 
+    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+    A_fu = np.zeros(num)
+    A_fl = np.zeros(num)
+    A_wl = np.zeros(num+1)
+    A_wr = np.zeros(num+1)
+
+
+    y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+    x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+    x_fl_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+
+    q_fupper = lambda s: q_flange_u*( 1 -1/w_u*2*s)
+
+    for x in range(0,math.ceil(num/2) - 1):
+        A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+        A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        
+        A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+        A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        
+        A_fl[x] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+        A_fl[x +1] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+        
+        A_fl[num - x -1] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+        A_fl[num - x -2] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+
+
+    for x in range(0, num):
+        A_wl[x] += t_w_l*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+        A_wl[x+1] += t_w_l*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+        
+        A_wr[x] += t_w_r*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+        A_wr[x+1] += t_w_r*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+
+
+    A_fu[0] = A_fu[0] + A_wl[-1]
+    A_fl[0] = A_fl[0] + A_wl[0]
+    A_wl[-1] = A_fu[0]
+    A_wl[0] = A_fl[0]
+
+    A_fu[-1] = A_fu[-1] + A_wr[-1]
+    A_fl[-1] = A_fl[-1] + A_wr[0]
+    A_wr[-1] = A_fu[-1]
+    A_wr[0] = A_fl[-1]
+
+    A_fu = A_fu.tolist()
+    A_fl = A_fl.tolist()
+    A_wl = A_wl.tolist()
+    A_wr = A_wr.tolist()
+
+    res_A = A_fl + A_wl + A_fu + A_wr
+    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
+
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
         x = x_fl + x_w_l + x_fu + x_w_r,
         y = y_fl + y_w_l + y_fu + y_w_r,
         mode='lines+markers',
         name='Shear flow [N/mm]',
-        hoverinfo = 'none',
+        hoverinfo = 'text',
+        hoveron = 'points',
+        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
         line=dict(color='grey'),
         visible = [True if c is 0 else False][0])
 
@@ -1259,7 +1463,7 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
         visible = [True if c is 0 else False][0])
 
     #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1_o, trace1_i, trace1_sc, trace2, trace3, trace4_l, trace4_r, trace1b, trace2b, trace3b, trace4b_l, trace4b_r]
+    data_temp = [trace1_o, trace1_i, trace1_sc, trace1_na, trace2, trace3, trace4_l, trace4_r, trace1b, trace2b, trace3b, trace4b_l, trace4b_r]
 
     data = data + data_temp
     c = c +1
@@ -1321,8 +1525,9 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
 
     return (data, layout)
 
-def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
-
+def gen_data_u_beam(V_x,V_y,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
+    
+    #Calculate geometrical properties of section
     A_tot = w*t_f_u + t_w_l*(h_l - t_f_u) + t_w_r*(h_r - t_f_u)
     y_cdg = (t_f_u*w*w/2. + t_w_r*h_r*w)/(t_f_u*w + t_w_r*h_r + t_w_l*h_l)
     x_cdg = (t_w_l*h_l*h_l/2. + t_w_r*h_r*h_r/2.)/(t_f_u*w + t_w_r*h_r + t_w_l*h_l)
@@ -1330,7 +1535,8 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
     I_x = t_w_l*h_l*y_cdg**2 + (t_f_u*w**3/12) + t_f_u*w*(w/2. - y_cdg)**2 + t_w_r*h_r*(w - y_cdg)**2
     I_y = (t_w_l*h_l**3/12.) + t_w_l*h_l*(h_l/2. - x_cdg)**2 + t_f_u*w*x_cdg**2 + (t_w_r*h_r**3/12.) + t_w_r*h_r*(h_r/2. - x_cdg)**2
     I_xy = t_w_l*h_l*(h_l/2. - x_cdg)*y_cdg + t_f_u*w*(-w/2. + y_cdg)*(-x_cdg) + t_w_r*h_r*(h_r/2. - x_cdg)*(-w + y_cdg)
-
+    
+    #Compute maximum shear flows on section
     q43_y = lambda s: V_y*(I_xy/(I_x*I_y - I_xy**2)*t_w_r*((h_r - x_cdg)*s - s**2/2.) + I_y/(I_x*I_y - I_xy**2)*t_w_r*(w - y_cdg)*s)
     q43_x = lambda s: V_x*(I_x/(I_x*I_y - I_xy**2)*t_w_r*((h_r - x_cdg)*s - s**2/2.) + I_xy/(I_x*I_y - I_xy**2)*t_w_r*(w - y_cdg)*s)
 
@@ -1343,8 +1549,6 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
 
     q23_x = lambda s: V_x*(I_x/(I_x*I_y - I_xy**2)*t_f_u*(-(x_cdg)*s) - I_xy/(I_x*I_y - I_xy**2)*t_f_u*(-(w - y_cdg)*s + s**2/2.)) + q43_x(h_r)
 
-    # #Calculate geometrical properties of section
-    # #Compute maximum shear flows on section
 
     q_web_fun_l = lambda y: V_l*(t_f_u*(w/2. + x_sc)*(h_l - y_cdg_l - t_f_u/2.) + (h_l - y - t_f_u)*t_w_l*(((h_l - t_f_u) + y)/2. - y_cdg_l))/I_x_l
 
@@ -1373,7 +1577,7 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
         line=dict(color='black'),
         visible=[True if c is 0 else False][0])
 
-    #Entity that plots the location of the shear load application
+    #Entity that plots the location of the shear load application (shear center)
     trace1_sc = go.Scatter(
         x = [origin_x - w/2. + x_sc - t_w_r/2.*(x_sc - w/2.)/w*2.],
         y = [origin_y + max([h_l,h_r]) + y_sc - t_f_u/2.],
@@ -1381,9 +1585,10 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
         hovertext = r'Shear Center <br> x_sc = {0:.2f} <br> y_sc = {1:.2f} <br> w.r.t. ext. of upper flange & left web'.format(x_sc,y_sc),
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'blue', size = 10),
         visible=[True if c is 0 else False][0])
-
+    
+    #Entity that plots the location of the center of gravity
     trace1_cg = go.Scatter(
         x = [origin_x - w/2. + y_cdg],
         y = [origin_y + max([h_l,h_r]) - x_cdg],
@@ -1391,14 +1596,29 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
         name = 'Center of Gravity',
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'purple', size = 10),
         visible=[True if c is 0 else False][0])
+   
+    #Entity that plots the neutral axis
+    phi = np.arctan(-(2*I_xy)/max([1e-05,(I_x - I_y)]))/2.
+
+    trace1_na = go.Scatter(
+        x = np.linspace(origin_x -w/2. + y_cdg - w/4.*np.cos(phi),origin_x -w/2. + y_cdg + w/4.*np.cos(phi),21),
+        y = np.linspace(origin_y + max([h_l,h_r]) - x_cdg - w/4.*np.sin(phi), origin_y + max([h_l,h_r]) - x_cdg + w/4.*np.sin(phi), 21),
+        name = 'Neutral Axis',
+        mode='lines',
+        hoveron = 'points',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('purple'),
+            dash = 'dashdot'))
+
 
     #Determination of the shear flow fields in the upper and lower flanges of the I-section    
     x_par_flow_f = np.linspace(0.,w,21)
     y_par_flow_f = q23_x(x_par_flow_f)
 
-    y_par_coord_f = [origin_y + max([h_l,h_r]) + np.abs(y_par_flow_f[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l)]) for x in range(len(y_par_flow_f))]
+    y_par_coord_f = [origin_y + max([h_l,h_r]) + np.abs(y_par_flow_f[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in range(len(y_par_flow_f))]
     y_par_flow_f = y_par_flow_f.tolist()
     y_par_flow_f.append(y_par_flow_f[-1])
     y_par_flow_f.insert(0,y_par_flow_f[0])
@@ -1438,7 +1658,7 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
     y_par_flow_l = np.linspace(0.,h_l,21)
     x_par_flow_l = q12_x(y_par_flow_l)
 
-    x_par_coord_l = [origin_x - w/2. - np.abs(x_par_flow_l[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l)]) for x in range(len(x_par_flow_l))]
+    x_par_coord_l = [origin_x - w/2. - np.abs(x_par_flow_l[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in range(len(x_par_flow_l))]
     x_par_flow_l = x_par_flow_l.tolist()
     x_par_flow_l.append(x_par_flow_l[-1])
     x_par_flow_l.insert(0,0.)
@@ -1474,7 +1694,7 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
     x_par_flow_r = q43_x(y_par_flow_r)
     # print(x_par_flow_r)
 
-    x_par_coord_r = [origin_x + w/2. + np.abs(x_par_flow_r[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l)]) for x in range(len(x_par_flow_r))]
+    x_par_coord_r = [origin_x + w/2. + np.abs(x_par_flow_r[x])*max([h_l,h_r])/5./max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in range(len(x_par_flow_r))]
 
     x_par_flow_r = x_par_flow_r.tolist()
     x_par_flow_r.append(x_par_flow_r[-1])
@@ -1543,7 +1763,6 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
 
 
     #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-
     y_flange_u = q23_x
     x_web_l = q12_x
     x_web_r = q43_x
@@ -1561,9 +1780,9 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
 
 
 
-    q_fu_pl = [np.abs(x) + origin_y + max([h_l,h_r]) + max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l)]) for x in q_fu[::-1]]
-    q_w_l_pl = [origin_xd -w/2.- max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l)]) for x in q_w_l]
-    q_w_r_pl = [origin_xd +w/2.+ max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l)]) for x in q_w_r[::-1]]
+    q_fu_pl = [np.abs(x) + origin_y + max([h_l,h_r]) + max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_fu[::-1]]
+    q_w_l_pl = [origin_xd -w/2.- max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_w_l]
+    q_w_r_pl = [origin_xd +w/2.+ max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_w_r[::-1]]
 
     q_fu[0] = q_fu_s[0]
     q_fu[-1] = q_fu_s[-1]
@@ -1572,14 +1791,49 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
     q_w_r[0] = q_w_r_s[0]
     q_w_r[-1] = q_w_r_s[-1]
 
+    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+    A_w_r = np.zeros(num+1)
+    A_w_l = np.zeros(num+1)
+    A_fu = np.zeros(num)
+    
+    y_w_l_A =  np.linspace(origin_yd,origin_yd  + h_l,num+1).tolist()
+    y_w_r_A =  np.linspace(origin_yd,origin_yd  + h_r,num+1).tolist()
+    x_fu_A = np.linspace(origin_xd ,origin_xd+w,num).tolist()
+
+    for x in range(0,num):
+        A_w_r[x] += t_w_r*h_r/(num -1)/6.*(2 + q43_x(y_w_r_A[x+1] - origin_yd)/max([1e-05,q43_x(y_w_r_A[x] - origin_yd)]))
+        A_w_r[x +1] += t_w_r*h_r/(num -1)/6.*(2 + q43_x(y_w_r_A[x] - origin_yd)/max([1e-05,q43_x(y_w_r_A[x+1] - origin_yd)]))
+        
+        A_w_l[x] += t_w_l*h_l/(num -1)/6.*(2 + q12_x(y_w_l_A[x+1] - origin_yd)/min([-1e-05,q12_x(y_w_l_A[x] - origin_yd)]))
+        A_w_l[x +1] += t_w_l*h_l/(num -1)/6.*(2 + q12_x(y_w_l_A[x] - origin_yd)/min([-1e-05,q12_x(y_w_l_A[x+1] - origin_yd)]))
+
+    for x in range(0, num-1):
+        A_fu[x] += t_f_u*w/(num+1)/6.*(2 + q23_x(x_fu_A[x+1] - origin_xd)/q23_x(x_fu_A[x] - origin_xd))
+        A_fu[x+1] += t_f_u*w/(num+1)/6.*(2 + q23_x(x_fu_A[x] - origin_xd)/q23_x(x_fu_A[x+1] - origin_xd))
+    
+    # print(A_fu)
+    A_w_r[-1] = A_w_r[-1] + A_fu[-1]
+    A_w_l[-1] = A_w_l[-1] + A_fu[0]
+    A_fu[-1] = A_w_r[-1]
+    A_fu[0] = A_w_l[-1]
+
+    A_w_r = A_w_r.tolist()
+    A_w_l = A_w_l.tolist()
+    A_fu = A_fu.tolist()
+
+    res_A = A_w_l + A_fu + A_w_r
+    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
 
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
         x =  x_w_l + x_fu + x_w_r,
-        y =  y_w_l + y_fu + y_w_r,
+        y =  y_w_l + y_fu + y_w_r[::-1],
         mode='lines+markers',
         name='Shear flow [N/mm]',
-        hoverinfo = 'none',
+        hoverinfo = 'text',
+        hoveron = 'points',
+        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
         line=dict(color='grey'),
         visible = [True if c is 0 else False][0])
 
@@ -1618,14 +1872,14 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
         name='Shear flow [N/mm]',
         hoverinfo = 'text',
         hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_w_r],
+        hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_w_r[::-1]],
         #hovertemplate = '%{hovertext:.2f}',
         fill = 'toself',
         line=dict(color='red'),
         visible = [True if c is 0 else False][0])
 
     #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg, trace2_l, trace4_l, trace4_r, trace1b, trace2b, trace4b_l, trace4b_r]
+    data_temp = [trace1, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1_sc, trace1b, trace2b, trace4b_l, trace4b_r]
 
     data = data + data_temp
     c = c +1
@@ -1682,7 +1936,9 @@ def gen_data_u_beam(V_y,V_x,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
     return (data, layout)
 
 def gen_data_o_beam(V_y,V_x,rad,t,num):
+    
 
+    #Calculate geometrical properties of section
     w = rad*2
     h_l = rad*2
     h_r = rad*2
@@ -1699,7 +1955,9 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
     I_x = t_w_l*h_l*y_cdg**2 + (t_f_u*w**3/12) + t_f_u*w*(w/2. - y_cdg)**2 + t_w_r*h_r*(w - y_cdg)**2
     I_y = (t_w_l*h_l**3/12.) + t_w_l*h_l*(h_l/2. - x_cdg)**2 + t_f_u*w*x_cdg**2 + (t_w_r*h_r**3/12.) + t_w_r*h_r*(h_r/2. - x_cdg)**2
     I_xy = t_w_l*h_l*(h_l/2. - x_cdg)*y_cdg + t_f_u*w*(-w/2. + y_cdg)*(-x_cdg) + t_w_r*h_r*(h_r/2. - x_cdg)*(-w + y_cdg)
+    
 
+    #Compute maximum shear flows on section
     q43_y = lambda s: V_y*(I_xy/(I_x*I_y - I_xy**2)*t_w_r*((h_r - x_cdg)*s - s**2/2.) + I_y/(I_x*I_y - I_xy**2)*t_w_r*(w - y_cdg)*s)
     q43_x = lambda s: V_x*(I_x/(I_x*I_y - I_xy**2)*t_w_r*((h_r - x_cdg)*s - s**2/2.) + I_xy/(I_x*I_y - I_xy**2)*t_w_r*(w - y_cdg)*s)
 
@@ -1711,9 +1969,6 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
     q12_x = lambda s: V_x*(-I_x/(I_x*I_y - I_xy**2)*t_w_l*((h_l - x_cdg)*s - s**2/2.) + I_xy/(I_x*I_y - I_xy**2)*t_w_l*(y_cdg)*s)
 
     q23_x = lambda s: V_x*(I_x/(I_x*I_y - I_xy**2)*t_f_u*(-(x_cdg)*s) - I_xy/(I_x*I_y - I_xy**2)*t_f_u*(-(w - y_cdg)*s + s**2/2.)) + q43_x(h_r)
-
-    # #Calculate geometrical properties of section
-    # #Compute maximum shear flows on section
 
     q_web_fun_l = lambda y: V_l*(t_f_u*(w/2. + x_sc)*(h_l - y_cdg_l - t_f_u/2.) + (h_l - y - t_f_u)*t_w_l*(((h_l - t_f_u) + y)/2. - y_cdg_l))/I_x_l
 
@@ -1766,17 +2021,18 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         line=dict(color='black'),
         visible=[True if c is 0 else False][0])
 
-        #Entitiy that plots the left-most (non-idealized) cross section
+    #Entitiy that plots the left-most (non-idealized) cross section
     trace1_i = go.Scatter(
         x = x_coord_i,
         y = y_coord_i,
         mode='lines',
         # hoveron='fills',
+        hoverinfo='skip',
         fillcolor='rgba(26,150,65,0.)',
         line=dict(color='black'),
         visible=[True if c is 0 else False][0])
 
-    #Entity that plots the location of the shear load application
+    #Entity that plots the location of the shear load application (shear center)
     trace1_sc = go.Scatter(
         x = [origin_x - rad + x_sc],
         y = [origin_y + rad],
@@ -1784,9 +2040,10 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         hovertext = r'Shear Center <br> x_sc = {0:.2f} <br> y_sc = {1:.2f} <br> w.r.t. exterior'.format(np.abs(x_sc),0.),
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'blue', size = 10),
         visible=[True if c is 0 else False][0])
-
+    
+    #Entity that plots the location of the center of gravity
     trace1_cg = go.Scatter(
         x = [origin_x],
         y = [origin_y + rad],
@@ -1794,18 +2051,28 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         name = 'Center of Gravity',
         hoverinfo = 'text',
         mode = 'markers',
-        marker = dict(color = 'black', size = 6),
+        marker = dict(color = 'purple', size = 10),
         visible=[True if c is 0 else False][0])
+    
+    #Entity that plots the neutral axis
+    trace1_na = go.Scatter(
+        x = np.linspace(origin_x - rad/2.,origin_x+ rad/2.,21),
+        y = np.linspace(origin_y + y_cdg, origin_y + y_cdg, 21),
+        name = 'Neutral Axis',
+        mode='lines',
+        hoveron = 'points',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('purple'),
+            dash = 'dashdot'))
 
-    #Determination of the shear flow fields in the upper and lower flanges of the I-section    
+    #Determination of the shear flow fields  
     rad_par_flow_f = q_rad(theta)
 
-    y_par_coord_f = [y_coord_o[x] - rad_par_flow_f[x]*np.sin(theta[x])*rad for x in range(len(rad_par_flow_f))]
-    x_par_coord_f = [x_coord_o[x] - rad_par_flow_f[x]*np.cos(theta[x])*rad for x in range(len(rad_par_flow_f))]
-    # #Points through which the parabola-shaped shear flow in the web goes
+    y_par_coord_f = [y_coord_o[x] - rad_par_flow_f[x]*np.sin(theta[x])*100*rad/V_y for x in range(len(rad_par_flow_f))]
+    x_par_coord_f = [x_coord_o[x] - rad_par_flow_f[x]*np.cos(theta[x])*100*rad/V_y for x in range(len(rad_par_flow_f))]
 
-
-    #Entity that plots the upper flange shear flow
+    #Entity that plots the shear flow around the circle
     trace2_l = go.Scatter(
         x= x_par_coord_f,
         y= y_par_coord_f,
@@ -1822,11 +2089,19 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         y= y_par_coord_f + y_coord_o.tolist()[::-1],
         mode='lines',
         fill = 'toself',
+        hoverinfo='skip',
         # fillcolor = 'red',
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
-
+    trace3 = go.Scatter(
+        x = np.linspace(origin_x + rad - rad/4.,origin_x + rad + rad/4.,4),
+        y = np.linspace(origin_y + rad, origin_y + rad, 4),
+        name = 'Section Cut',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('black'),
+            dash = 'dashdot'))
 
     #Set the origin of coordinates for the right-most figure (idealized)
     if w > max([h_l,h_r]):
@@ -1849,28 +2124,21 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
 
     x_coord_d = list(itertools.chain.from_iterable(itertools.repeat(x_coord_o[x], 2) for x in range(len(x_coord_o))))
     y_coord_d = list(itertools.chain.from_iterable(itertools.repeat(y_coord_o[x], 2) for x in range(len(y_coord_o))))
-    # x_fu_int = np.linspace(0. ,max([1,w]),num).tolist()
 
     rad_int = list(itertools.chain.from_iterable(itertools.repeat(theta_d[x], 2) for x in range(len(theta_d))))
 
-
-    # #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-
     y_flange_u = q_rad
 
-    # #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
+    #Define discretized shear flow by averaging calculated flow on non-idealized cross section
     q_fu_s =  [integrate.quad(y_flange_u,rad_int[2*x],rad_int[2*x+2])[0]/(rad_int[2*x + 2] - rad_int[2*x]) for x in range(int(len(rad_int)/2 -1))]
-
-
     q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
 
     q_fu_pl = [x*rad for x in q_fu]
 
-
     q_fu[0] = q_fu_s[0]
     q_fu[-1] = q_fu_s[-1]
 
-
+    #Lines of code that smooth out the sharp peaks resulting from the direct discretization of the shear flow
     theta_d = list(itertools.chain.from_iterable(itertools.repeat(theta_d[x], 2) for x in range(len(theta_d))))
 
     side_angle = [np.arccos((x_fu[2*x+2] - x_fu[2*x+1])/(math.sqrt((x_fu[2*x+2] - x_fu[2*x+1])**2 + (y_fu[2*x+2] - y_fu[2*x+1])**2)))*180/np.pi for x in range(int(len(x_fu)/2 -1))]
@@ -1884,11 +2152,11 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
     sign_angle = [0.] + sign_angle + [0.]
 
 
-    y_par_coord_d = [y_fu[x] - q_fu[x]*np.sin(theta_d[x])*rad  for x in range(len(q_fu) - 1)]
-    x_par_coord_d = [x_fu[x] - q_fu[x]*np.cos(theta_d[x])*rad  for x in range(len(q_fu) - 1)]
+    y_par_coord_d = [y_fu[x] - q_fu[x]*np.sin(theta_d[x])*100*rad/V_y  for x in range(len(q_fu) - 1)]
+    x_par_coord_d = [x_fu[x] - q_fu[x]*np.cos(theta_d[x])*100*rad/V_y  for x in range(len(q_fu) - 1)]
 
-    x_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*rad*np.sin(2*np.pi/num)*(-np.abs(np.cos(side_angle[x]*np.pi/180.)))  for x in range(int(len(x_fu)/2))]
-    y_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*rad*np.sin(2*np.pi/num)*np.sin(side_angle[x]*np.pi/180.)*sign_angle[x]  for x in range(int(len(x_fu)/2))]
+    x_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*100*rad/V_y*np.sin(2*np.pi/num)*(-np.abs(np.cos(side_angle[x]*np.pi/180.)))  for x in range(int(len(x_fu)/2))]
+    y_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*100*rad/V_y*np.sin(2*np.pi/num)*np.sin(side_angle[x]*np.pi/180.)*sign_angle[x]  for x in range(int(len(x_fu)/2))]
 
 
     for x in range(int(len(x_fu)/4)):
@@ -1898,13 +2166,30 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         x_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] = x_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] + x_par_coord_dx[int(len(x_par_coord_dx)/2) + x]
         y_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] = y_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] + y_par_coord_dx[int(len(x_par_coord_dx)/2) + x]
 
+    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+    A_rad = np.zeros(num+1)
+    
+    theta_d_A = np.linspace(0,2*np.pi,num+1).tolist()
+
+    for x in range(0,num):
+        A_rad[x] += t*(2*np.pi*rad)/(num -1)/6.*(2 + q_rad(theta_d_A[x+1])/min([-1e-05,q_rad(theta_d_A[x])]))
+        A_rad[x +1] += t*(2*np.pi*rad)/(num -1)/6.*(2 + q_rad(theta_d_A[x])/min([-1e-05,q_rad(theta_d_A[x+1])]))
+        
+    A_rad = A_rad.tolist()
+
+    res_A = A_rad
+    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
+
     #Entitiy that plots the right-most (idealized) cross section
     trace1b = go.Scatter(
         x =  x_fu,
         y =  y_fu,
         mode='lines+markers',
         name='Shear flow [N/mm]',
-        hoverinfo = 'none',
+        hoverinfo = 'text',
+        hoveron = 'points',
+        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
         line=dict(color='grey'),
         visible = [True if c is 0 else False][0])
 
@@ -1927,13 +2212,24 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         y= y_fu + y_par_coord_d[::-1],
         mode='lines',
         fill = 'toself',
+        hoveron = 'fills',
+        hoverinfo='skip',
         # fillcolor = 'red',
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
+    trace3b = go.Scatter(
+        x = np.linspace(origin_xd + rad - rad/4.,origin_xd + rad + rad/4.,4),
+        y = np.linspace(origin_yd, origin_yd, 4),
+        name = 'Section Cut',
+        hoverinfo = 'name',
+        line = dict(
+            color = ('black'),
+            dash = 'dashdot'))
+
 
     #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1_i, trace1_sc, trace1_cg, trace2_f, trace2_l, trace1, trace2b, trace2b_f, trace1b]
+    data_temp = [trace1_i, trace2_f, trace2_l, trace1,trace1_sc, trace1_cg,trace1_na, trace3,trace2b, trace2b_f, trace1b, trace3b]
 
     data = data + data_temp
     c = c +1
