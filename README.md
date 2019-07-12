@@ -1,4 +1,5 @@
 # cr-case
+
 Creation of Python-based interactive charts on various topics of fundamental structural analysis. The concepts covered are some of those in the course AE2135-I Structural Analysis & Design of the BSc Aerospace Engineering at the Technical University of Delft.
 
 The charts are intended to show interactively some of the ideas introduced in the course, serving as comparison between exact and approximate approaches and visualizing the influence of the shape in the geometrical properties and the elastic analysis. It is possible to vary geometries and shapes as well as to reach out the information transmitted by the chart in an intuitive manner.
@@ -36,6 +37,10 @@ The apps are created using Dash which allows them to be run locally in "developm
 ## Development Environment
 
 This app has been developed using Python 3.7.3.
+
+## Authorship
+
+This app has been developed by Alejandro Soriano and licensed under the MIT license.
 
 ## Bibliography
 
