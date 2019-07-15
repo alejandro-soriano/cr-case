@@ -19,7 +19,7 @@ def eq_parab(p,e1,e2,vert): #Function used to calculate the parabola constants
     return (eq1,eq2,eq3)
 
 
-def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
+def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num,disc):
 
     #Calculate geometrical properties of section
     A_tot = w_u*t_f_u + t_w*(h - t_f_u - t_f_l) + w_l*t_f_l #mm2
@@ -45,10 +45,14 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
     c = 0
 
     #Set origin of coordinates for the left-most figure (non-idealized)
-    if max([w_u,w_l]) > h:
-        origin_x = -(h/max([w_u,w_l])*(h - 0.75*max([w_u,w_l])) + 0.75*max([w_u,w_l]))
-    else:
-        origin_x = -1.*h
+    if disc == 'Y':
+        if max([w_u,w_l]) > h:
+            origin_x = -(h/max([w_u,w_l])*(h - 0.75*max([w_u,w_l])) + 0.75*max([w_u,w_l]))
+        else:
+            origin_x = -1.*h
+    elif disc == 'N':
+        origin_x = 0.
+    
     origin_y = 0.
 
     #Entitiy that plots the left-most (non-idealized) cross section
@@ -183,160 +187,166 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
-    #Set the origin of coordinates for the right-most figure (idealized)
-    if max([w_u,w_l]) > h:
-        origin_xd = (h/max([w_u,w_l])*(h - 0.75*max([w_u,w_l])) + 0.75*max([w_u,w_l]))
-    else:
-        origin_xd = 1.*h
-    origin_yd = 0.
+    if disc == 'Y':
+        #Set the origin of coordinates for the right-most figure (idealized)
+        if max([w_u,w_l]) > h:
+            origin_xd = (h/max([w_u,w_l])*(h - 0.75*max([w_u,w_l])) + 0.75*max([w_u,w_l]))
+        else:
+            origin_xd = 1.*h
+        origin_yd = 0.
 
-    #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
-    x_fl = np.linspace(origin_xd - w_l/2. ,origin_xd+w_l/2.,num).tolist()
-    x_w =  np.linspace(origin_xd, origin_xd,num+1).tolist()
+        #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
+        x_fu = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
+        x_fl = np.linspace(origin_xd - w_l/2. ,origin_xd+w_l/2.,num).tolist()
+        x_w =  np.linspace(origin_xd, origin_xd,num+1).tolist()
 
-    y_fu = np.linspace(origin_yd + h - t_f_u/2., origin_yd + h - t_f_u/2.,num).tolist()
-    y_fl = np.linspace(origin_yd + t_f_l/2., origin_yd + t_f_l/2.,num).tolist()
-    y_w =  np.linspace(origin_yd + t_f_l/2.,origin_yd + h - t_f_u/2.,num+1).tolist()
+        y_fu = np.linspace(origin_yd + h - t_f_u/2., origin_yd + h - t_f_u/2.,num).tolist()
+        y_fl = np.linspace(origin_yd + t_f_l/2., origin_yd + t_f_l/2.,num).tolist()
+        y_w =  np.linspace(origin_yd + t_f_l/2.,origin_yd + h - t_f_u/2.,num+1).tolist()
 
-    #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
-    x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
-    x_fl = list(itertools.chain.from_iterable(itertools.repeat(x_fl[x], 2) for x in range(len(x_fl))))
-    x_w =list(itertools.chain.from_iterable(itertools.repeat(x_w[x], 2) for x in range(len(x_w))))
+        #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
+        x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
+        x_fl = list(itertools.chain.from_iterable(itertools.repeat(x_fl[x], 2) for x in range(len(x_fl))))
+        x_w =list(itertools.chain.from_iterable(itertools.repeat(x_w[x], 2) for x in range(len(x_w))))
 
-    y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
-    y_fl = list(itertools.chain.from_iterable(itertools.repeat(y_fl[x], 2) for x in range(len(y_fl))))
-    y_w =list(itertools.chain.from_iterable(itertools.repeat(y_w[x], 2) for x in range(len(y_w))))
+        y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
+        y_fl = list(itertools.chain.from_iterable(itertools.repeat(y_fl[x], 2) for x in range(len(y_fl))))
+        y_w =list(itertools.chain.from_iterable(itertools.repeat(y_w[x], 2) for x in range(len(y_w))))
 
-    #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-    y_flange_u = np.linspace(0.,q_flange_u,int(num/2 + 1)).tolist() + np.linspace(q_flange_u,0.,int(num/2 + 1)).tolist()[1:]
-    y_flange_l = np.linspace(0.,q_flange_l,int(num/2 + 1)).tolist() + np.linspace(q_flange_l,0.,int(num/2 + 1)).tolist()[1:]
+        #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
+        y_flange_u = np.linspace(0.,q_flange_u,int(num/2 + 1)).tolist() + np.linspace(q_flange_u,0.,int(num/2 + 1)).tolist()[1:]
+        y_flange_l = np.linspace(0.,q_flange_l,int(num/2 + 1)).tolist() + np.linspace(q_flange_l,0.,int(num/2 + 1)).tolist()[1:]
 
-    x_web = q_web_fun
+        x_web = q_web_fun
 
-    #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
-    q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
-    q_fl_s = [(y_flange_l[x+1] + y_flange_l[x])/2 for x in range(len(y_flange_l) - 1)]
-    q_w_s =  [integrate.quad(x_web,y_w[2*x],y_w[2*x+2])[0]/(y_w[2*x + 2] - y_w[2*x]) for x in range(int(len(y_w)/2 -1))]
+        #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
+        q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
+        q_fl_s = [(y_flange_l[x+1] + y_flange_l[x])/2 for x in range(len(y_flange_l) - 1)]
+        q_w_s =  [integrate.quad(x_web,y_w[2*x],y_w[2*x+2])[0]/(y_w[2*x + 2] - y_w[2*x]) for x in range(int(len(y_w)/2 -1))]
 
-    q_w_total = integrate.quad(x_web,y_w[0],y_w[-1])[0]
+        q_w_total = integrate.quad(x_web,y_w[0],y_w[-1])[0]
 
-    q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
-    q_fl = [0.] + [q_fl_s[int(x/2)] for x in range(int(len(x_fl)-2))] + [0.]
-    q_w = [0.] + [q_w_s[int(x/2)] for x in range(int(len(x_w)-2))] + [0.]
+        q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
+        q_fl = [0.] + [q_fl_s[int(x/2)] for x in range(int(len(x_fl)-2))] + [0.]
+        q_w = [0.] + [q_w_s[int(x/2)] for x in range(int(len(x_w)-2))] + [0.]
 
-    q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fu]
-    q_fl_pl = [x + origin_y  - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fl]
-    q_w_pl = [origin_xd -max([w_u/2.,w_l/2.])- h/5.*x/max([q_flange_u,q_flange_l]) for x in q_w]
+        q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fu]
+        q_fl_pl = [x + origin_y  - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fl]
+        q_w_pl = [origin_xd -max([w_u/2.,w_l/2.])- h/5.*x/max([q_flange_u,q_flange_l]) for x in q_w]
 
-    q_fu[0] = q_fu_s[0]
-    q_fu[-1] = q_fu_s[-1]
-    q_fl[0] = q_fl_s[0]
-    q_fl[-1] = q_fl_s[-1]
-    q_w[0] = q_w_s[0]
-    q_w[-1] = q_w_s[-1]
+        q_fu[0] = q_fu_s[0]
+        q_fu[-1] = q_fu_s[-1]
+        q_fl[0] = q_fl_s[0]
+        q_fl[-1] = q_fl_s[-1]
+        q_w[0] = q_w_s[0]
+        q_w[-1] = q_w_s[-1]
 
-    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
-    A_fu = np.zeros(num)
-    A_fl = np.zeros(num)
-    A_w = np.zeros(num+1)
+        #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+        A_fu = np.zeros(num)
+        A_fl = np.zeros(num)
+        A_w = np.zeros(num+1)
 
-    y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
-    x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
-    x_fl_A = np.linspace(origin_xd ,origin_xd+w_l/2.,num).tolist()
+        y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+        x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+        x_fl_A = np.linspace(origin_xd ,origin_xd+w_l/2.,num).tolist()
 
-    q_fupper = lambda s: q_flange_u/w_u*2*s
+        q_fupper = lambda s: q_flange_u/w_u*2*s
 
-    for x in range(0,math.ceil(num/2) - 1):
-        A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
-        A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
-        
-        A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
-        A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
-        
-        A_fl[x] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
-        A_fl[x +1] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
-        
-        A_fl[num - x -1] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
-        A_fl[num - x -2] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+        for x in range(0,math.ceil(num/2) - 1):
+            A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+            A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+            
+            A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+            A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+            
+            A_fl[x] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+            A_fl[x +1] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+            
+            A_fl[num - x -1] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+            A_fl[num - x -2] += t_f_l*w_l/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
 
 
-    for x in range(0, num):
-        A_w[x] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
-        A_w[x+1] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+        for x in range(0, num):
+            A_w[x] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+            A_w[x+1] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
 
-      
-    A_fu[math.ceil(num/2) - 1] = A_fu[math.ceil(num/2) - 1] + A_w[-1]
-    A_fl[math.ceil(num/2) - 1] = A_fl[math.ceil(num/2) - 1] + A_w[0]
-    A_w[-1] = A_fu[math.ceil(num/2) - 1]
-    A_w[0] = A_fl[math.ceil(num/2) - 1]
+          
+        A_fu[math.ceil(num/2) - 1] = A_fu[math.ceil(num/2) - 1] + A_w[-1]
+        A_fl[math.ceil(num/2) - 1] = A_fl[math.ceil(num/2) - 1] + A_w[0]
+        A_w[-1] = A_fu[math.ceil(num/2) - 1]
+        A_w[0] = A_fl[math.ceil(num/2) - 1]
 
-    A_fu = A_fu.tolist()
-    A_fl = A_fl.tolist()
-    A_w = A_w.tolist()
+        A_fu = A_fu.tolist()
+        A_fl = A_fl.tolist()
+        A_w = A_w.tolist()
 
-    res_A = A_fl + A_w + A_fu
-    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+        res_A = A_fl + A_w + A_fu
+        res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
 
-    #Entitiy that plots the right-most (idealized) cross section
-    trace1b = go.Scatter(
-        x = x_fl + x_w + x_fu,
-        y = y_fl + y_w + y_fu,
-        mode='lines+markers',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
-        line=dict(color='grey'),
-        visible = [True if c is 0 else False][0])
+        #Entitiy that plots the right-most (idealized) cross section
+        trace1b = go.Scatter(
+            x = x_fl + x_w + x_fu,
+            y = y_fl + y_w + y_fu,
+            mode='lines+markers',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
+            line=dict(color='grey'),
+            visible = [True if c is 0 else False][0])
 
-    #Entity that plots the discretized shear flow on the upper flange
-    trace2b = go.Scatter(
-        x= x_fu,
-        y= q_fu_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Entity that plots the discretized shear flow on the upper flange
+        trace2b = go.Scatter(
+            x= x_fu,
+            y= q_fu_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    #Entity that plots the discretized shear flow on the lower flange
-    trace3b = go.Scatter(
-        x= x_fl,
-        y= q_fl_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fl],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Entity that plots the discretized shear flow on the lower flange
+        trace3b = go.Scatter(
+            x= x_fl,
+            y= q_fl_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fl],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    #Entity that plots the discretized shear flow on the web
-    trace4b = go.Scatter(
-        x=q_w_pl,
-        y=y_w,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Entity that plots the discretized shear flow on the web
+        trace4b = go.Scatter(
+            x=q_w_pl,
+            y=y_w,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg,trace1_na, trace2, trace3, trace4, trace1b, trace2b, trace3b, trace4b]
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1, trace1_sc, trace1_cg,trace1_na, trace2, trace3, trace4, trace1b, trace2b, trace3b, trace4b]
 
-    data = data + data_temp
-    c = c +1
+        data = data + data_temp
+
+    elif disc == 'N':
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1, trace1_sc, trace1_cg,trace1_na, trace2, trace3, trace4]
+
+        data = data + data_temp
 
     #Define layout options of figure
     layout = go.Layout(
@@ -389,7 +399,7 @@ def gen_data_i_beam(V_y,V_x,t_w,t_f_u,t_f_l,h,w_u,w_l,num):
 
     return (data, layout)
 
-def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
+def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num,disc):
 
     #Calculate geometrical properties of section
     A_tot = w_u*t_f_u + t_w*(h - t_f_u)  #mm2
@@ -412,10 +422,13 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
     c = 0
 
     #Set origin of coordinates for the left-most figure (non-idealized)
-    if max([w_u]) > h:
-        origin_x = -(h/w_u*(h - 0.75*w_u) + 0.75*w_u)
-    else:
-        origin_x = -1.*h
+    if disc == 'Y':
+        if max([w_u]) > h:
+            origin_x = -(h/w_u*(h - 0.75*w_u) + 0.75*w_u)
+        else:
+            origin_x = -1.*h
+    elif disc == 'N':
+        origin_x = 0.
     origin_y = 0.
 
     #Entitiy that plots the left-most (non-idealized) cross section
@@ -538,122 +551,128 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
-    #Set the origin of coordinates for the right-most figure (idealized)
-    if max([w_u]) > h:
-        origin_xd = (h/max([w_u,w_u])*(h - 0.75*max([w_u,w_u])) + 0.75*max([w_u,w_u]))
-    else:
-        origin_xd = 1.*h
+    if disc == 'Y':
 
-    origin_yd = 0.
+        #Set the origin of coordinates for the right-most figure (idealized)
+        if max([w_u]) > h:
+            origin_xd = (h/max([w_u,w_u])*(h - 0.75*max([w_u,w_u])) + 0.75*max([w_u,w_u]))
+        else:
+            origin_xd = 1.*h
 
-    #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
-    x_w =  np.linspace(origin_xd, origin_xd,num+1).tolist()
+        origin_yd = 0.
 
-    y_fu = np.linspace(origin_yd + h - t_f_u/2., origin_yd + h - t_f_u/2.,num).tolist()
-    y_w =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+        #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
+        x_fu = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
+        x_w =  np.linspace(origin_xd, origin_xd,num+1).tolist()
 
-    #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
-    x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
-    x_w =list(itertools.chain.from_iterable(itertools.repeat(x_w[x], 2) for x in range(len(x_w))))
+        y_fu = np.linspace(origin_yd + h - t_f_u/2., origin_yd + h - t_f_u/2.,num).tolist()
+        y_w =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
 
-    y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
-    y_w =list(itertools.chain.from_iterable(itertools.repeat(y_w[x], 2) for x in range(len(y_w))))
+        #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
+        x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
+        x_w =list(itertools.chain.from_iterable(itertools.repeat(x_w[x], 2) for x in range(len(x_w))))
 
-    #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-    y_flange_u = np.linspace(0.,q_flange_u,int(num/2 + 1)).tolist() + np.linspace(q_flange_u,0.,int(num/2 + 1)).tolist()[1:]
+        y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
+        y_w =list(itertools.chain.from_iterable(itertools.repeat(y_w[x], 2) for x in range(len(y_w))))
 
-    x_web = lambda y: a_flow*(y)**2 + b_flow*y + c_flow
+        #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
+        y_flange_u = np.linspace(0.,q_flange_u,int(num/2 + 1)).tolist() + np.linspace(q_flange_u,0.,int(num/2 + 1)).tolist()[1:]
 
-    #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
-    q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
-    q_w_s =  [integrate.quad(x_web,y_w[2*x],y_w[2*x+2])[0]/(y_w[2*x + 2] - y_w[2*x]) for x in range(int(len(y_w)/2 -1))]
+        x_web = lambda y: a_flow*(y)**2 + b_flow*y + c_flow
 
-    q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
-    q_w = [0.] + [q_w_s[int(x/2)] for x in range(int(len(x_w)-2))] + [0.]
+        #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
+        q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
+        q_w_s =  [integrate.quad(x_web,y_w[2*x],y_w[2*x+2])[0]/(y_w[2*x + 2] - y_w[2*x]) for x in range(int(len(y_w)/2 -1))]
 
-    q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u]) for x in q_fu]
-    q_w_pl = [origin_xd -max([w_u/2.,w_u/2.])- h/5.*x/max([q_flange_u]) for x in q_w]
+        q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
+        q_w = [0.] + [q_w_s[int(x/2)] for x in range(int(len(x_w)-2))] + [0.]
 
-    q_fu[0] = q_fu_s[0]
-    q_fu[-1] = q_fu_s[-1]
-    q_w[0] = q_w_s[0]
-    q_w[-1] = q_w_s[-1]
+        q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u]) for x in q_fu]
+        q_w_pl = [origin_xd -max([w_u/2.,w_u/2.])- h/5.*x/max([q_flange_u]) for x in q_w]
 
-    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
-    A_fu = np.zeros(num)
-    A_w = np.zeros(num+1)
+        q_fu[0] = q_fu_s[0]
+        q_fu[-1] = q_fu_s[-1]
+        q_w[0] = q_w_s[0]
+        q_w[-1] = q_w_s[-1]
 
-    y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
-    x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+        #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+        A_fu = np.zeros(num)
+        A_w = np.zeros(num+1)
 
-    q_fupper = lambda s: q_flange_u/w_u*2*s
+        y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+        x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
 
-    for x in range(0,math.ceil(num/2) - 1):
-        A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
-        A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        q_fupper = lambda s: q_flange_u/w_u*2*s
+
+        for x in range(0,math.ceil(num/2) - 1):
+            A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+            A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+            
+            A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+            A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+
+        for x in range(0, num):
+            A_w[x] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+            A_w[x+1] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
         
-        A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
-        A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+        A_fu[math.ceil(num/2) - 1] = A_fu[math.ceil(num/2) - 1] + A_w[-1]
+        A_w[-1] = A_fu[math.ceil(num/2) - 1]
 
-    for x in range(0, num):
-        A_w[x] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
-        A_w[x+1] += t_w*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
-    
-    A_fu[math.ceil(num/2) - 1] = A_fu[math.ceil(num/2) - 1] + A_w[-1]
-    A_w[-1] = A_fu[math.ceil(num/2) - 1]
+        A_fu = A_fu.tolist()
+        A_w = A_w.tolist()
 
-    A_fu = A_fu.tolist()
-    A_w = A_w.tolist()
+        res_A = A_w + A_fu
+        res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
 
-    res_A = A_w + A_fu
-    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+        #Entitiy that plots the right-most (idealized) cross section
+        trace1b = go.Scatter(
+            x =  x_w + x_fu,
+            y =  y_w + y_fu,
+            mode='lines+markers',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
+            line=dict(color='grey'),
+            visible = [True if c is 0 else False][0])
 
-    #Entitiy that plots the right-most (idealized) cross section
-    trace1b = go.Scatter(
-        x =  x_w + x_fu,
-        y =  y_w + y_fu,
-        mode='lines+markers',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
-        line=dict(color='grey'),
-        visible = [True if c is 0 else False][0])
+        #Entity that plots the discretized shear flow on the upper flange
+        trace2b = go.Scatter(
+            x= x_fu,
+            y= q_fu_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    #Entity that plots the discretized shear flow on the upper flange
-    trace2b = go.Scatter(
-        x= x_fu,
-        y= q_fu_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Entity that plots the discretized shear flow on the web
+        trace4b = go.Scatter(
+            x=q_w_pl,
+            y=y_w,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    #Entity that plots the discretized shear flow on the web
-    trace4b = go.Scatter(
-        x=q_w_pl,
-        y=y_w,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2, trace4, trace1b, trace2b, trace4b]
 
-    #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2, trace4, trace1b, trace2b, trace4b]
+        data = data + data_temp
 
-    data = data + data_temp
-    c = c +1
+    elif disc == 'N':
+        data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2, trace4]
+
+        data = data + data_temp
 
     #Define layout options of figure
     layout = go.Layout(
@@ -699,7 +718,7 @@ def gen_data_t_beam(V_y,V_x,t_w,t_f_u,h,w_u,num):
 
     return (data, layout)
 
-def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
+def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num,disc):
 
     #Calculate geometrical properties of section
     A_tot = w*t_f_u + t_w_l*(h_l - t_f_u) + t_w_r*(h_r - t_f_u)
@@ -732,10 +751,13 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
     c = 0
 
     #Set origin of coordinates for the left-most figure (non-idealized)
-    if max([h_r,h_l]) > w:
-        origin_x = -(w/max([h_r,h_l])*(w - 0.75*max([h_r,h_l])) + 0.75*max([h_r,h_l]))
-    else:
-        origin_x = -1.*w
+    if disc == 'Y':
+        if max([h_r,h_l]) > w:
+            origin_x = -(w/max([h_r,h_l])*(w - 0.75*max([h_r,h_l])) + 0.75*max([h_r,h_l]))
+        else:
+            origin_x = -1.*w
+    elif disc == 'N':
+        origin_x = 0.
     origin_y = 0.
 
     #Entitiy that plots the left-most (non-idealized) cross section
@@ -900,160 +922,166 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
-    #Set the origin of coordinates for the right-most figure (idealized)
-    if max([h_r,h_l]) > w:
-        origin_xd = (w/max([h_r,h_l])*(w - 0.75*max([h_r,h_l])) + 0.75*max([h_r,h_l]))
-    else:
-        origin_xd = 1.*w
-    origin_yd = 0.
+    if disc == 'Y':
 
-    #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num+1).tolist()
-    x_w_l =  np.linspace(origin_yd + t_w_l/2., origin_yd + t_w_l/2.,num+1).tolist()
-    x_w_r =  np.linspace(origin_yd + w - t_w_r/2., origin_yd + w - t_w_r/2.,num+1).tolist()
+        #Set the origin of coordinates for the right-most figure (idealized)
+        if max([h_r,h_l]) > w:
+            origin_xd = (w/max([h_r,h_l])*(w - 0.75*max([h_r,h_l])) + 0.75*max([h_r,h_l]))
+        else:
+            origin_xd = 1.*w
+        origin_yd = 0.
 
-
-    y_fu = np.linspace(origin_xd + t_f_u/2., origin_xd + t_f_u/2.,num+1).tolist()
-    y_w_l =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_l,num+1).tolist()
-    y_w_r =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_r,num+1).tolist()
-
-    #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
-    x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
-    x_w_l =list(itertools.chain.from_iterable(itertools.repeat(x_w_l[x], 2) for x in range(len(x_w_l))))
-    x_w_r =list(itertools.chain.from_iterable(itertools.repeat(x_w_r[x], 2) for x in range(len(x_w_r))))
-
-    y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
-    y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
-    y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
-    
-    x_fu_int = np.linspace(0. ,max([1,w]),num+1).tolist()
-    x_fu_int = x_fu_int[::-1]
-    y_w_l_int =  np.linspace(0.,max([1,h_l]),num+1).tolist()
-    y_w_r_int =  np.linspace(0.,max([1,h_r]),num+1).tolist()
-
-    x_fu_int = list(itertools.chain.from_iterable(itertools.repeat(x_fu_int[x], 2) for x in range(len(x_fu_int))))
-    y_w_l_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_l_int[x], 2) for x in range(len(y_w_l_int))))
-    y_w_r_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_r_int[x], 2) for x in range(len(y_w_r_int))))
+        #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
+        x_fu = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num+1).tolist()
+        x_w_l =  np.linspace(origin_yd + t_w_l/2., origin_yd + t_w_l/2.,num+1).tolist()
+        x_w_r =  np.linspace(origin_yd + w - t_w_r/2., origin_yd + w - t_w_r/2.,num+1).tolist()
 
 
-    #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-    y_flange_u = q23_y
-    x_web_l = q12_y
-    x_web_r = q43_y
+        y_fu = np.linspace(origin_xd + t_f_u/2., origin_xd + t_f_u/2.,num+1).tolist()
+        y_w_l =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_l,num+1).tolist()
+        y_w_r =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_r,num+1).tolist()
 
-    #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
-    q_fu_s =  [integrate.quad(y_flange_u,x_fu_int[2*x],x_fu_int[2*x+2])[0]/(x_fu_int[2*x + 2] - x_fu_int[2*x]) for x in range(int(len(x_fu_int)/2 -1))]
-    q_w_l_s =  [integrate.quad(x_web_l,y_w_l_int[2*x],y_w_l_int[2*x+2])[0]/(y_w_l_int[2*x + 2] - y_w_l_int[2*x]) for x in range(int(len(y_w_l_int)/2 -1))]
-    q_w_r_s =  [integrate.quad(x_web_r,y_w_r_int[2*x],y_w_r_int[2*x+2])[0]/(y_w_r_int[2*x + 2] - y_w_r_int[2*x]) for x in range(int(len(y_w_r_int)/2 -1))]
+        #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
+        x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
+        x_w_l =list(itertools.chain.from_iterable(itertools.repeat(x_w_l[x], 2) for x in range(len(x_w_l))))
+        x_w_r =list(itertools.chain.from_iterable(itertools.repeat(x_w_r[x], 2) for x in range(len(x_w_r))))
 
-    q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
-    q_w_l = [0.] + [q_w_l_s[int(x/2)] for x in range(int(len(x_w_l)-2))] + [0.]
-    q_w_r = [0.] + [q_w_r_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
+        y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
+        y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
+        y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
+        
+        x_fu_int = np.linspace(0. ,max([1,w]),num+1).tolist()
+        x_fu_int = x_fu_int[::-1]
+        y_w_l_int =  np.linspace(0.,max([1,h_l]),num+1).tolist()
+        y_w_r_int =  np.linspace(0.,max([1,h_r]),num+1).tolist()
 
-    q_fu_pl = [np.abs(x) + origin_xd - max([h_l,h_r])/5.*np.abs(x)/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_fu]
-    q_w_l_pl = [origin_yd - max([h_l,h_r])/5.*x/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_w_l[::-1]]
-    q_w_r_pl = [origin_yd +w+ max([h_l,h_r])/5.*x/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_w_r[::-1]]
-
-    q_fu[0] = q_fu_s[0]
-    q_fu[-1] = q_fu_s[-1]
-    q_w_l[0] = q_w_l_s[0]
-    q_w_l[-1] = q_w_l_s[-1]
-    q_w_r[0] = q_w_r_s[0]
-    q_w_r[-1] = q_w_r_s[-1]
-
-    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
-    A_w_r = np.zeros(num+1)
-    A_w_l = np.zeros(num+1)
-    A_fu = np.zeros(num+1)
-    
-    y_w_l_A =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_l,num+1).tolist()
-    y_w_r_A =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_r,num+1).tolist()
-    x_fu_A = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num+1).tolist()
-
-    for x in range(0,num):
-        A_w_r[num - x] += t_w_r*h_r/(num -1)/6.*(2 + q43_y(y_w_r_A[x+1] - origin_xd)/q43_y(y_w_r_A[x] - origin_xd))
-        A_w_r[num - x -1] += t_w_r*h_r/(num -1)/6.*(2 + q43_y(y_w_r_A[x] - origin_xd)/q43_y(y_w_r_A[x+1] - origin_xd))
-
-        A_w_l[num - x] += t_w_l*h_l/(num -1)/6.*(2 + q12_y(y_w_l_A[x+1] - origin_xd)/q12_y(y_w_l_A[x] - origin_xd))
-        A_w_l[num - x -1] += t_w_l*h_l/(num -1)/6.*(2 + q12_y(y_w_l_A[x] - origin_xd)/q12_y(y_w_l_A[x+1] - origin_xd))
-
-   
-    for x in range(0, num):
-        A_fu[x] += t_f_u*w/(num+1)/6.*(2 + q23_y(x_fu_A[x+1] - origin_yd)/q23_y(x_fu_A[x] - origin_yd))
-        A_fu[x+1] += t_f_u*w/(num+1)/6.*(2 + q23_y(x_fu_A[x] - origin_yd)/q23_y(x_fu_A[x+1] - origin_yd))
-    
-    
-    A_w_r[0] = A_w_r[0] + A_fu[-1]
-    A_w_l[0] = A_w_l[0] + A_fu[0]
-    A_fu[-1] = A_w_r[0]
-    A_fu[0] = A_w_l[0]
-
-    A_w_r = A_w_r.tolist()
-    A_w_l = A_w_l.tolist()
-    A_fu = A_fu.tolist()
-
-    res_A = A_w_l + A_fu + A_w_r
-    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+        x_fu_int = list(itertools.chain.from_iterable(itertools.repeat(x_fu_int[x], 2) for x in range(len(x_fu_int))))
+        y_w_l_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_l_int[x], 2) for x in range(len(y_w_l_int))))
+        y_w_r_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_r_int[x], 2) for x in range(len(y_w_r_int))))
 
 
-    #Entitiy that plots the right-most (idealized) cross section
-    trace1b = go.Scatter(
-        x =  y_w_l + y_fu + y_w_r,
-        y =  x_w_l + x_fu + x_w_r,
-        mode='lines+markers',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
-        line=dict(color='grey'),
-        visible = [True if c is 0 else False][0])
+        #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
+        y_flange_u = q23_y
+        x_web_l = q12_y
+        x_web_r = q43_y
 
-    #Entity that plots the discretized shear flow on the upper flange
-    trace2b = go.Scatter(
-        x= q_fu_pl,
-        y=  x_fu,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
+        q_fu_s =  [integrate.quad(y_flange_u,x_fu_int[2*x],x_fu_int[2*x+2])[0]/(x_fu_int[2*x + 2] - x_fu_int[2*x]) for x in range(int(len(x_fu_int)/2 -1))]
+        q_w_l_s =  [integrate.quad(x_web_l,y_w_l_int[2*x],y_w_l_int[2*x+2])[0]/(y_w_l_int[2*x + 2] - y_w_l_int[2*x]) for x in range(int(len(y_w_l_int)/2 -1))]
+        q_w_r_s =  [integrate.quad(x_web_r,y_w_r_int[2*x],y_w_r_int[2*x+2])[0]/(y_w_r_int[2*x + 2] - y_w_r_int[2*x]) for x in range(int(len(y_w_r_int)/2 -1))]
 
-    #Entity that plots the discretized shear flow on the web
-    trace4b_l = go.Scatter(
-        x= y_w_l,
-        y= q_w_l_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w_l[::-1]],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
+        q_w_l = [0.] + [q_w_l_s[int(x/2)] for x in range(int(len(x_w_l)-2))] + [0.]
+        q_w_r = [0.] + [q_w_r_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
 
-    trace4b_r = go.Scatter(
-        x= y_w_r,
-        y= q_w_r_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w_r[::-1]],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        q_fu_pl = [np.abs(x) + origin_xd - max([h_l,h_r])/5.*np.abs(x)/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_fu]
+        q_w_l_pl = [origin_yd - max([h_l,h_r])/5.*x/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_w_l[::-1]]
+        q_w_r_pl = [origin_yd +w+ max([h_l,h_r])/5.*x/max([q43_y(h_r),q12_y(h_l),max(q23_y(np.linspace(0.,w,21)))]) for x in q_w_r[::-1]]
 
-    #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1b, trace2b, trace4b_l, trace4b_r]
+        q_fu[0] = q_fu_s[0]
+        q_fu[-1] = q_fu_s[-1]
+        q_w_l[0] = q_w_l_s[0]
+        q_w_l[-1] = q_w_l_s[-1]
+        q_w_r[0] = q_w_r_s[0]
+        q_w_r[-1] = q_w_r_s[-1]
 
-    data = data + data_temp
-    c = c +1
+        #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+        A_w_r = np.zeros(num+1)
+        A_w_l = np.zeros(num+1)
+        A_fu = np.zeros(num+1)
+        
+        y_w_l_A =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_l,num+1).tolist()
+        y_w_r_A =  np.linspace(origin_xd + t_f_u/2.,origin_xd + h_r,num+1).tolist()
+        x_fu_A = np.linspace(origin_yd  + t_w_l/2. ,origin_yd + w- t_w_r/2.,num+1).tolist()
+
+        for x in range(0,num):
+            A_w_r[num - x] += t_w_r*h_r/(num -1)/6.*(2 + q43_y(y_w_r_A[x+1] - origin_xd)/q43_y(y_w_r_A[x] - origin_xd))
+            A_w_r[num - x -1] += t_w_r*h_r/(num -1)/6.*(2 + q43_y(y_w_r_A[x] - origin_xd)/q43_y(y_w_r_A[x+1] - origin_xd))
+
+            A_w_l[num - x] += t_w_l*h_l/(num -1)/6.*(2 + q12_y(y_w_l_A[x+1] - origin_xd)/q12_y(y_w_l_A[x] - origin_xd))
+            A_w_l[num - x -1] += t_w_l*h_l/(num -1)/6.*(2 + q12_y(y_w_l_A[x] - origin_xd)/q12_y(y_w_l_A[x+1] - origin_xd))
+
+       
+        for x in range(0, num):
+            A_fu[x] += t_f_u*w/(num+1)/6.*(2 + q23_y(x_fu_A[x+1] - origin_yd)/q23_y(x_fu_A[x] - origin_yd))
+            A_fu[x+1] += t_f_u*w/(num+1)/6.*(2 + q23_y(x_fu_A[x] - origin_yd)/q23_y(x_fu_A[x+1] - origin_yd))
+        
+        
+        A_w_r[0] = A_w_r[0] + A_fu[-1]
+        A_w_l[0] = A_w_l[0] + A_fu[0]
+        A_fu[-1] = A_w_r[0]
+        A_fu[0] = A_w_l[0]
+
+        A_w_r = A_w_r.tolist()
+        A_w_l = A_w_l.tolist()
+        A_fu = A_fu.tolist()
+
+        res_A = A_w_l + A_fu + A_w_r
+        res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
+
+        #Entitiy that plots the right-most (idealized) cross section
+        trace1b = go.Scatter(
+            x =  y_w_l + y_fu + y_w_r,
+            y =  x_w_l + x_fu + x_w_r,
+            mode='lines+markers',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
+            line=dict(color='grey'),
+            visible = [True if c is 0 else False][0])
+
+        #Entity that plots the discretized shear flow on the upper flange
+        trace2b = go.Scatter(
+            x= q_fu_pl,
+            y=  x_fu,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        #Entity that plots the discretized shear flow on the web
+        trace4b_l = go.Scatter(
+            x= y_w_l,
+            y= q_w_l_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w_l[::-1]],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        trace4b_r = go.Scatter(
+            x= y_w_r,
+            y= q_w_r_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_w_r[::-1]],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1b, trace2b, trace4b_l, trace4b_r]
+
+        data = data + data_temp
+
+    elif disc == 'N':
+        data_temp = [trace1, trace1_sc, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r]
+
+        data = data + data_temp
 
     #Define layout options of figure
     layout = go.Layout(
@@ -1100,7 +1128,7 @@ def gen_data_c_beam(V_y,V_x,t_f_u,t_w_r,t_w_l,w,h_r,h_l,num):
 
     return (data, layout)
 
-def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
+def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num,disc):
 
     #Calculate geometrical properties of section
     A_tot = w_u*t_f_u + t_w_l*(h - t_f_u - t_f_l) + t_w_r*(h - t_f_u - t_f_l) + w_u*t_f_l #mm2
@@ -1125,10 +1153,13 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
     c = 0
 
     #Set origin of coordinates for the left-most figure (non-idealized)
-    if max([w_u,w_u]) > h:
-        origin_x = -(h/max([w_u,w_u])*(h - 0.75*max([w_u,w_u])) + 0.75*max([w_u,w_u]))
-    else:
-        origin_x = -1.*h
+    if disc == 'Y':
+        if max([w_u,w_u]) > h:
+            origin_x = -(h/max([w_u,w_u])*(h - 0.75*max([w_u,w_u])) + 0.75*max([w_u,w_u]))
+        else:
+            origin_x = -1.*h
+    elif disc == 'N':
+        origin_x = 0.
     origin_y = 0.
 
     #Entitiy that plots the left-most (non-idealized) cross section
@@ -1274,199 +1305,206 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
-    #Set the origin of coordinates for the right-most figure (idealized)
-    if max([w_u,w_u]) > h:
-        origin_xd = (h/max([w_u,w_u])*(h - 0.75*max([w_u,w_u])) + 0.75*max([w_u,w_u]))
-    else:
-        origin_xd = 1.*h
-    origin_yd = 0.
+    if disc == 'Y':
 
-    #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
-    x_fl = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
-    x_w_l = np.linspace(origin_xd - w_u/2., origin_xd - w_u/2.,num+1).tolist()
-    x_w_r = np.linspace(origin_xd + w_u/2., origin_xd + w_u/2.,num+1).tolist()
+        #Set the origin of coordinates for the right-most figure (idealized)
+        if max([w_u,w_u]) > h:
+            origin_xd = (h/max([w_u,w_u])*(h - 0.75*max([w_u,w_u])) + 0.75*max([w_u,w_u]))
+        else:
+            origin_xd = 1.*h
+        origin_yd = 0.
 
-
-    y_fu = np.linspace(origin_yd + h - t_f_u/2., origin_yd + h - t_f_u/2.,num).tolist()
-    y_fl = np.linspace(origin_yd + t_f_l/2., origin_yd + t_f_l/2.,num).tolist()
-    y_w_l =  np.linspace(origin_yd + t_f_l/2.,origin_yd + h - t_f_u/2.,num+1).tolist()
-    y_w_r =  np.linspace(origin_yd + t_f_l/2.,origin_yd + h - t_f_u/2.,num+1).tolist()
-
-    #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
-    x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
-    x_fl = list(itertools.chain.from_iterable(itertools.repeat(x_fl[x], 2) for x in range(len(x_fl))))
-    x_w_l =list(itertools.chain.from_iterable(itertools.repeat(x_w_l[x], 2) for x in range(len(x_w_l))))
-    x_w_r =list(itertools.chain.from_iterable(itertools.repeat(x_w_r[x], 2) for x in range(len(x_w_r))))
-
-    y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
-    y_fl = list(itertools.chain.from_iterable(itertools.repeat(y_fl[x], 2) for x in range(len(y_fl))))
-    y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
-    y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
-
-    #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-    y_flange_u = np.linspace(0.,q_flange_u,int(num/2 + 1)).tolist() + np.linspace(q_flange_u,0.,int(num/2 + 1)).tolist()[1:]
-    y_flange_l = np.linspace(0.,q_flange_l,int(num/2 + 1)).tolist() + np.linspace(q_flange_l,0.,int(num/2 + 1)).tolist()[1:]
-
-    x_web_l = q_web_fun
-    x_web_r = q_web_fun
+        #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
+        x_fu = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
+        x_fl = np.linspace(origin_xd - w_u/2. ,origin_xd+w_u/2.,num).tolist()
+        x_w_l = np.linspace(origin_xd - w_u/2., origin_xd - w_u/2.,num+1).tolist()
+        x_w_r = np.linspace(origin_xd + w_u/2., origin_xd + w_u/2.,num+1).tolist()
 
 
-    #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
-    q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
-    q_fl_s = [(y_flange_l[x+1] + y_flange_l[x])/2 for x in range(len(y_flange_l) - 1)]
-    q_wl_s =  [integrate.quad(x_web_l,y_w_l[2*x],y_w_l[2*x+2])[0]/(y_w_l[2*x + 2] - y_w_l[2*x]) for x in range(int(len(y_w_l)/2 -1))]
-    q_wr_s =  [integrate.quad(x_web_r,y_w_r[2*x],y_w_r[2*x+2])[0]/(y_w_r[2*x + 2] - y_w_r[2*x]) for x in range(int(len(y_w_r)/2 -1))]
+        y_fu = np.linspace(origin_yd + h - t_f_u/2., origin_yd + h - t_f_u/2.,num).tolist()
+        y_fl = np.linspace(origin_yd + t_f_l/2., origin_yd + t_f_l/2.,num).tolist()
+        y_w_l =  np.linspace(origin_yd + t_f_l/2.,origin_yd + h - t_f_u/2.,num+1).tolist()
+        y_w_r =  np.linspace(origin_yd + t_f_l/2.,origin_yd + h - t_f_u/2.,num+1).tolist()
 
-    q_w_l_total = integrate.quad(x_web_l,y_w_l[0],y_w_l[-1])[0]
-    q_w_r_total = integrate.quad(x_web_r,y_w_r[0],y_w_r[-1])[0]
+        #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
+        x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
+        x_fl = list(itertools.chain.from_iterable(itertools.repeat(x_fl[x], 2) for x in range(len(x_fl))))
+        x_w_l =list(itertools.chain.from_iterable(itertools.repeat(x_w_l[x], 2) for x in range(len(x_w_l))))
+        x_w_r =list(itertools.chain.from_iterable(itertools.repeat(x_w_r[x], 2) for x in range(len(x_w_r))))
 
-    q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
-    q_fl = [0.] + [q_fl_s[int(x/2)] for x in range(int(len(x_fl)-2))] + [0.]
-    q_wl = [0.] + [q_wl_s[int(x/2)] for x in range(int(len(x_w_l)-2))] + [0.]
-    q_wr = [0.] + [q_wr_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
+        y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
+        y_fl = list(itertools.chain.from_iterable(itertools.repeat(y_fl[x], 2) for x in range(len(y_fl))))
+        y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
+        y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
 
-    q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fu]
-    q_fl_pl = [x + origin_y  - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fl]
-    q_wl_pl = [origin_xd -w_u/2. - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_wl]
-    q_wr_pl = [origin_xd +w_u/2. + h/5.*x/max([q_flange_u,q_flange_l]) for x in q_wr]
+        #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
+        y_flange_u = np.linspace(0.,q_flange_u,int(num/2 + 1)).tolist() + np.linspace(q_flange_u,0.,int(num/2 + 1)).tolist()[1:]
+        y_flange_l = np.linspace(0.,q_flange_l,int(num/2 + 1)).tolist() + np.linspace(q_flange_l,0.,int(num/2 + 1)).tolist()[1:]
 
-    q_fu[0] = q_fu_s[0]
-    q_fu[-1] = q_fu_s[-1]
-    q_fl[0] = q_fl_s[0]
-    q_fl[-1] = q_fl_s[-1]
-    q_wl[0] = q_wl_s[0]
-    q_wl[-1] = q_wl_s[-1]
-    q_wr[0] = q_wr_s[0]
-    q_wr[-1] = q_wr_s[-1]
-
-    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
-    A_fu = np.zeros(num)
-    A_fl = np.zeros(num)
-    A_wl = np.zeros(num+1)
-    A_wr = np.zeros(num+1)
+        x_web_l = q_web_fun
+        x_web_r = q_web_fun
 
 
-    y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
-    x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
-    x_fl_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+        #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
+        q_fu_s = [(y_flange_u[x+1] + y_flange_u[x])/2 for x in range(len(y_flange_u) - 1)]
+        q_fl_s = [(y_flange_l[x+1] + y_flange_l[x])/2 for x in range(len(y_flange_l) - 1)]
+        q_wl_s =  [integrate.quad(x_web_l,y_w_l[2*x],y_w_l[2*x+2])[0]/(y_w_l[2*x + 2] - y_w_l[2*x]) for x in range(int(len(y_w_l)/2 -1))]
+        q_wr_s =  [integrate.quad(x_web_r,y_w_r[2*x],y_w_r[2*x+2])[0]/(y_w_r[2*x + 2] - y_w_r[2*x]) for x in range(int(len(y_w_r)/2 -1))]
 
-    q_fupper = lambda s: q_flange_u*( 1 -1/w_u*2*s)
+        q_w_l_total = integrate.quad(x_web_l,y_w_l[0],y_w_l[-1])[0]
+        q_w_r_total = integrate.quad(x_web_r,y_w_r[0],y_w_r[-1])[0]
 
-    for x in range(0,math.ceil(num/2) - 1):
-        A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
-        A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
-        
-        A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
-        A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
-        
-        A_fl[x] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
-        A_fl[x +1] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
-        
-        A_fl[num - x -1] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
-        A_fl[num - x -2] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+        q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
+        q_fl = [0.] + [q_fl_s[int(x/2)] for x in range(int(len(x_fl)-2))] + [0.]
+        q_wl = [0.] + [q_wl_s[int(x/2)] for x in range(int(len(x_w_l)-2))] + [0.]
+        q_wr = [0.] + [q_wr_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
 
+        q_fu_pl = [x + origin_y + h + h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fu]
+        q_fl_pl = [x + origin_y  - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_fl]
+        q_wl_pl = [origin_xd -w_u/2. - h/5.*x/max([q_flange_u,q_flange_l]) for x in q_wl]
+        q_wr_pl = [origin_xd +w_u/2. + h/5.*x/max([q_flange_u,q_flange_l]) for x in q_wr]
 
-    for x in range(0, num):
-        A_wl[x] += t_w_l*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
-        A_wl[x+1] += t_w_l*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
-        
-        A_wr[x] += t_w_r*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
-        A_wr[x+1] += t_w_r*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+        q_fu[0] = q_fu_s[0]
+        q_fu[-1] = q_fu_s[-1]
+        q_fl[0] = q_fl_s[0]
+        q_fl[-1] = q_fl_s[-1]
+        q_wl[0] = q_wl_s[0]
+        q_wl[-1] = q_wl_s[-1]
+        q_wr[0] = q_wr_s[0]
+        q_wr[-1] = q_wr_s[-1]
 
-
-    A_fu[0] = A_fu[0] + A_wl[-1]
-    A_fl[0] = A_fl[0] + A_wl[0]
-    A_wl[-1] = A_fu[0]
-    A_wl[0] = A_fl[0]
-
-    A_fu[-1] = A_fu[-1] + A_wr[-1]
-    A_fl[-1] = A_fl[-1] + A_wr[0]
-    A_wr[-1] = A_fu[-1]
-    A_wr[0] = A_fl[-1]
-
-    A_fu = A_fu.tolist()
-    A_fl = A_fl.tolist()
-    A_wl = A_wl.tolist()
-    A_wr = A_wr.tolist()
-
-    res_A = A_fl + A_wl + A_fu + A_wr
-    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+        #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+        A_fu = np.zeros(num)
+        A_fl = np.zeros(num)
+        A_wl = np.zeros(num+1)
+        A_wr = np.zeros(num+1)
 
 
-    #Entitiy that plots the right-most (idealized) cross section
-    trace1b = go.Scatter(
-        x = x_fl + x_w_l + x_fu + x_w_r,
-        y = y_fl + y_w_l + y_fu + y_w_r,
-        mode='lines+markers',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
-        line=dict(color='grey'),
-        visible = [True if c is 0 else False][0])
+        y_w_A =  np.linspace(origin_yd,origin_yd + h - t_f_u/2.,num+1).tolist()
+        x_fu_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
+        x_fl_A = np.linspace(origin_xd ,origin_xd+w_u/2.,num).tolist()
 
-    #Entity that plots the discretized shear flow on the upper flange
-    trace2b = go.Scatter(
-        x= x_fu,
-        y= q_fu_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        q_fupper = lambda s: q_flange_u*( 1 -1/w_u*2*s)
 
-    #Entity that plots the discretized shear flow on the lower flange
-    trace3b = go.Scatter(
-        x= x_fl,
-        y= q_fl_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fl],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        for x in range(0,math.ceil(num/2) - 1):
+            A_fu[x] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+            A_fu[x +1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+            
+            A_fu[num - x -1] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x] - origin_xd)]))
+            A_fu[num - x -2] += t_f_u*w_u/(num -1)/6.*(2 + q_fupper(x_fu_A[x] - origin_xd)/max([1e-05,q_fupper(x_fu_A[x +1] - origin_xd)]))
+            
+            A_fl[x] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+            A_fl[x +1] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
+            
+            A_fl[num - x -1] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x+1] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x] - origin_xd)]))
+            A_fl[num - x -2] += t_f_l*w_u/(num -1)/6.*(2 + q_fupper(x_fl_A[x] - origin_xd)/max([1e-05,q_fupper(x_fl_A[x +1] - origin_xd)]))
 
-    #Entity that plots the discretized shear flow on the web
-    trace4b_l = go.Scatter(
-        x=q_wl_pl,
-        y=y_w_l,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_wl],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+
+        for x in range(0, num):
+            A_wl[x] += t_w_l*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+            A_wl[x+1] += t_w_l*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+            
+            A_wr[x] += t_w_r*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x+1] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x] - origin_yd)]))
+            A_wr[x+1] += t_w_r*h/(num+1)/6.*(2 + q_web_fun(y_w_A[x] - origin_yd)/max([1e-05,q_web_fun(y_w_A[x+1] - origin_yd)]))
+
+
+        A_fu[0] = A_fu[0] + A_wl[-1]
+        A_fl[0] = A_fl[0] + A_wl[0]
+        A_wl[-1] = A_fu[0]
+        A_wl[0] = A_fl[0]
+
+        A_fu[-1] = A_fu[-1] + A_wr[-1]
+        A_fl[-1] = A_fl[-1] + A_wr[0]
+        A_wr[-1] = A_fu[-1]
+        A_wr[0] = A_fl[-1]
+
+        A_fu = A_fu.tolist()
+        A_fl = A_fl.tolist()
+        A_wl = A_wl.tolist()
+        A_wr = A_wr.tolist()
+
+        res_A = A_fl + A_wl + A_fu + A_wr
+        res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
+
+        #Entitiy that plots the right-most (idealized) cross section
+        trace1b = go.Scatter(
+            x = x_fl + x_w_l + x_fu + x_w_r,
+            y = y_fl + y_w_l + y_fu + y_w_r,
+            mode='lines+markers',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
+            line=dict(color='grey'),
+            visible = [True if c is 0 else False][0])
+
+        #Entity that plots the discretized shear flow on the upper flange
+        trace2b = go.Scatter(
+            x= x_fu,
+            y= q_fu_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fu],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        #Entity that plots the discretized shear flow on the lower flange
+        trace3b = go.Scatter(
+            x= x_fl,
+            y= q_fl_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_fl],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
         #Entity that plots the discretized shear flow on the web
-    
-    trace4b_r = go.Scatter(
-        x=q_wr_pl,
-        y=y_w_r,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(k) for k in q_wr],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        trace4b_l = go.Scatter(
+            x=q_wl_pl,
+            y=y_w_l,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_wl],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+            #Entity that plots the discretized shear flow on the web
+        
+        trace4b_r = go.Scatter(
+            x=q_wr_pl,
+            y=y_w_r,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(k) for k in q_wr],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1_o, trace1_i, trace1_sc, trace1_na, trace2, trace3, trace4_l, trace4_r, trace1b, trace2b, trace3b, trace4b_l, trace4b_r]
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1_o, trace1_i, trace1_sc, trace1_na, trace2, trace3, trace4_l, trace4_r, trace1b, trace2b, trace3b, trace4b_l, trace4b_r]
 
-    data = data + data_temp
-    c = c +1
+        data = data + data_temp
+
+    elif disc == 'N':
+        data_temp = [trace1_o, trace1_i, trace1_sc, trace1_na, trace2, trace3, trace4_l, trace4_r]
+
+        data = data + data_temp
+
 
     #Define layout options of figure
     layout = go.Layout(
@@ -1525,7 +1563,7 @@ def gen_data_s_beam(V_y,V_x,t_w_l,t_w_r,t_f_u,t_f_l,h,w_u,num):
 
     return (data, layout)
 
-def gen_data_u_beam(V_x,V_y,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
+def gen_data_u_beam(V_x,V_y,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num,disc):
     
     #Calculate geometrical properties of section
     A_tot = w*t_f_u + t_w_l*(h_l - t_f_u) + t_w_r*(h_r - t_f_u)
@@ -1558,10 +1596,13 @@ def gen_data_u_beam(V_x,V_y,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
     c = 0
 
     #Set origin of coordinates for the left-most figure (non-idealized)
-    if w > max([h_l,h_r]):
-        origin_x = -(max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
-    else:
-        origin_x = -1.*max([h_l,h_r])
+    if disc == 'Y':
+        if w > max([h_l,h_r]):
+            origin_x = -(max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
+        else:
+            origin_x = -1.*max([h_l,h_r])
+    elif disc == 'N':
+        origin_x = 0.
     origin_y = 0.
 
     #Entitiy that plots the left-most (non-idealized) cross section
@@ -1726,163 +1767,169 @@ def gen_data_u_beam(V_x,V_y,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
         line=dict(color='red'),
         visible=[True if c is 0 else False][0])
 
-    #Set the origin of coordinates for the right-most figure (idealized)
-    if w > max([h_l,h_r]):
-        origin_xd = (max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
-    else:
-        origin_xd = 1.*max([h_l,h_r])
+    if disc == 'Y':
 
-    origin_yd = 0.
+        #Set the origin of coordinates for the right-most figure (idealized)
+        if w > max([h_l,h_r]):
+            origin_xd = (max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
+        else:
+            origin_xd = 1.*max([h_l,h_r])
 
-    #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = np.linspace(origin_xd - w/2. + t_w_l/2. ,origin_xd+w/2. - t_w_r/2.,num).tolist()
-    x_w_l =  np.linspace(origin_xd - w/2. + t_w_l/2., origin_xd - w/2. + t_w_l/2.,num+1).tolist()
-    x_w_r =  np.linspace(origin_xd + w/2. - t_w_r/2., origin_xd + w/2. - t_w_r/2.,num+1).tolist()
+        origin_yd = 0.
 
-
-    y_fu = np.linspace(origin_yd + max([h_l,h_r]) - t_f_u/2., origin_yd + max([h_l,h_r]) - t_f_u/2.,num).tolist()
-    y_w_l =  np.linspace(origin_yd + max([h_l,h_r]) - h_l,origin_yd + max([h_l,h_r]) - t_f_u/2.,num+1).tolist()
-    y_w_r =  np.linspace(origin_yd + max([h_l,h_r]) - t_f_u/2.,origin_yd + max([h_l,h_r]) - h_r,num+1).tolist()
-
-    #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
-    x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
-    x_w_l =list(itertools.chain.from_iterable(itertools.repeat(x_w_l[x], 2) for x in range(len(x_w_l))))
-    x_w_r =list(itertools.chain.from_iterable(itertools.repeat(x_w_r[x], 2) for x in range(len(x_w_r))))
-
-    y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
-    y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
-    y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
-    
-    x_fu_int = np.linspace(0. ,max([1,w]),num).tolist()
-    y_w_l_int =  np.linspace(0.,max([1,h_l]),num+1).tolist()
-    y_w_r_int =  np.linspace(0.,max([1,h_r]),num+1).tolist()
-
-    x_fu_int = list(itertools.chain.from_iterable(itertools.repeat(x_fu_int[x], 2) for x in range(len(x_fu_int))))
-    y_w_l_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_l_int[x], 2) for x in range(len(y_w_l_int))))
-    y_w_r_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_r_int[x], 2) for x in range(len(y_w_r_int))))
+        #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
+        x_fu = np.linspace(origin_xd - w/2. + t_w_l/2. ,origin_xd+w/2. - t_w_r/2.,num).tolist()
+        x_w_l =  np.linspace(origin_xd - w/2. + t_w_l/2., origin_xd - w/2. + t_w_l/2.,num+1).tolist()
+        x_w_r =  np.linspace(origin_xd + w/2. - t_w_r/2., origin_xd + w/2. - t_w_r/2.,num+1).tolist()
 
 
-    #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
-    y_flange_u = q23_x
-    x_web_l = q12_x
-    x_web_r = q43_x
+        y_fu = np.linspace(origin_yd + max([h_l,h_r]) - t_f_u/2., origin_yd + max([h_l,h_r]) - t_f_u/2.,num).tolist()
+        y_w_l =  np.linspace(origin_yd + max([h_l,h_r]) - h_l,origin_yd + max([h_l,h_r]) - t_f_u/2.,num+1).tolist()
+        y_w_r =  np.linspace(origin_yd + max([h_l,h_r]) - t_f_u/2.,origin_yd + max([h_l,h_r]) - h_r,num+1).tolist()
 
-    #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
-    q_fu_s =  [integrate.quad(y_flange_u,x_fu_int[2*x],x_fu_int[2*x+2])[0]/(x_fu_int[2*x + 2] - x_fu_int[2*x]) for x in range(int(len(x_fu_int)/2 -1))]
-    q_w_l_s =  [integrate.quad(x_web_l,y_w_l_int[2*x],y_w_l_int[2*x+2])[0]/(y_w_l_int[2*x + 2] - y_w_l_int[2*x]) for x in range(int(len(y_w_l_int)/2 -1))]
-    q_w_r_s =  [integrate.quad(x_web_r,y_w_r_int[2*x],y_w_r_int[2*x+2])[0]/(y_w_r_int[2*x + 2] - y_w_r_int[2*x]) for x in range(int(len(y_w_r_int)/2 -1))]
+        #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
+        x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
+        x_w_l =list(itertools.chain.from_iterable(itertools.repeat(x_w_l[x], 2) for x in range(len(x_w_l))))
+        x_w_r =list(itertools.chain.from_iterable(itertools.repeat(x_w_r[x], 2) for x in range(len(x_w_r))))
 
-
-
-    q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
-    q_w_l = [0.] + [np.abs(q_w_l_s[int(x/2)]) for x in range(int(len(x_w_l)-2))] + [0.]
-    q_w_r = [0.] + [q_w_r_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
-
-
-
-    q_fu_pl = [np.abs(x) + origin_y + max([h_l,h_r]) + max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_fu[::-1]]
-    q_w_l_pl = [origin_xd -w/2.- max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_w_l]
-    q_w_r_pl = [origin_xd +w/2.+ max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_w_r[::-1]]
-
-    q_fu[0] = q_fu_s[0]
-    q_fu[-1] = q_fu_s[-1]
-    q_w_l[0] = q_w_l_s[0]
-    q_w_l[-1] = q_w_l_s[-1]
-    q_w_r[0] = q_w_r_s[0]
-    q_w_r[-1] = q_w_r_s[-1]
-
-    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
-    A_w_r = np.zeros(num+1)
-    A_w_l = np.zeros(num+1)
-    A_fu = np.zeros(num)
-    
-    y_w_l_A =  np.linspace(origin_yd,origin_yd  + h_l,num+1).tolist()
-    y_w_r_A =  np.linspace(origin_yd,origin_yd  + h_r,num+1).tolist()
-    x_fu_A = np.linspace(origin_xd ,origin_xd+w,num).tolist()
-
-    for x in range(0,num):
-        A_w_r[x] += t_w_r*h_r/(num -1)/6.*(2 + q43_x(y_w_r_A[x+1] - origin_yd)/max([1e-05,q43_x(y_w_r_A[x] - origin_yd)]))
-        A_w_r[x +1] += t_w_r*h_r/(num -1)/6.*(2 + q43_x(y_w_r_A[x] - origin_yd)/max([1e-05,q43_x(y_w_r_A[x+1] - origin_yd)]))
+        y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
+        y_w_l =list(itertools.chain.from_iterable(itertools.repeat(y_w_l[x], 2) for x in range(len(y_w_l))))
+        y_w_r =list(itertools.chain.from_iterable(itertools.repeat(y_w_r[x], 2) for x in range(len(y_w_r))))
         
-        A_w_l[x] += t_w_l*h_l/(num -1)/6.*(2 + q12_x(y_w_l_A[x+1] - origin_yd)/min([-1e-05,q12_x(y_w_l_A[x] - origin_yd)]))
-        A_w_l[x +1] += t_w_l*h_l/(num -1)/6.*(2 + q12_x(y_w_l_A[x] - origin_yd)/min([-1e-05,q12_x(y_w_l_A[x+1] - origin_yd)]))
+        x_fu_int = np.linspace(0. ,max([1,w]),num).tolist()
+        y_w_l_int =  np.linspace(0.,max([1,h_l]),num+1).tolist()
+        y_w_r_int =  np.linspace(0.,max([1,h_r]),num+1).tolist()
 
-    for x in range(0, num-1):
-        A_fu[x] += t_f_u*w/(num+1)/6.*(2 + q23_x(x_fu_A[x+1] - origin_xd)/q23_x(x_fu_A[x] - origin_xd))
-        A_fu[x+1] += t_f_u*w/(num+1)/6.*(2 + q23_x(x_fu_A[x] - origin_xd)/q23_x(x_fu_A[x+1] - origin_xd))
-    
-    # print(A_fu)
-    A_w_r[-1] = A_w_r[-1] + A_fu[-1]
-    A_w_l[-1] = A_w_l[-1] + A_fu[0]
-    A_fu[-1] = A_w_r[-1]
-    A_fu[0] = A_w_l[-1]
-
-    A_w_r = A_w_r.tolist()
-    A_w_l = A_w_l.tolist()
-    A_fu = A_fu.tolist()
-
-    res_A = A_w_l + A_fu + A_w_r
-    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+        x_fu_int = list(itertools.chain.from_iterable(itertools.repeat(x_fu_int[x], 2) for x in range(len(x_fu_int))))
+        y_w_l_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_l_int[x], 2) for x in range(len(y_w_l_int))))
+        y_w_r_int =list(itertools.chain.from_iterable(itertools.repeat(y_w_r_int[x], 2) for x in range(len(y_w_r_int))))
 
 
-    #Entitiy that plots the right-most (idealized) cross section
-    trace1b = go.Scatter(
-        x =  x_w_l + x_fu + x_w_r,
-        y =  y_w_l + y_fu + y_w_r[::-1],
-        mode='lines+markers',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
-        line=dict(color='grey'),
-        visible = [True if c is 0 else False][0])
+        #Append constants at beginning and end of the list to offset shape as much as the shear flow value at the intersection with the following element
+        y_flange_u = q23_x
+        x_web_l = q12_x
+        x_web_r = q43_x
 
-    #Entity that plots the discretized shear flow on the upper flange
-    trace2b = go.Scatter(
-        x= x_fu,
-        y= q_fu_pl,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_fu],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
+        #Define discretized shear flow by averaging calculated flow on non-idealized cross section in flanges and web
+        q_fu_s =  [integrate.quad(y_flange_u,x_fu_int[2*x],x_fu_int[2*x+2])[0]/(x_fu_int[2*x + 2] - x_fu_int[2*x]) for x in range(int(len(x_fu_int)/2 -1))]
+        q_w_l_s =  [integrate.quad(x_web_l,y_w_l_int[2*x],y_w_l_int[2*x+2])[0]/(y_w_l_int[2*x + 2] - y_w_l_int[2*x]) for x in range(int(len(y_w_l_int)/2 -1))]
+        q_w_r_s =  [integrate.quad(x_web_r,y_w_r_int[2*x],y_w_r_int[2*x+2])[0]/(y_w_r_int[2*x + 2] - y_w_r_int[2*x]) for x in range(int(len(y_w_r_int)/2 -1))]
 
-    #Entity that plots the discretized shear flow on the web
-    trace4b_l = go.Scatter(
-        x=q_w_l_pl,
-        y=y_w_l,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_w_l],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
 
-    trace4b_r = go.Scatter(
-        x=q_w_r_pl,
-        y=y_w_r,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_w_r[::-1]],
-        #hovertemplate = '%{hovertext:.2f}',
-        fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
 
-    #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1_sc, trace1b, trace2b, trace4b_l, trace4b_r]
+        q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
+        q_w_l = [0.] + [np.abs(q_w_l_s[int(x/2)]) for x in range(int(len(x_w_l)-2))] + [0.]
+        q_w_r = [0.] + [q_w_r_s[int(x/2)] for x in range(int(len(x_w_r)-2))] + [0.]
 
-    data = data + data_temp
-    c = c +1
+
+
+        q_fu_pl = [np.abs(x) + origin_y + max([h_l,h_r]) + max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_fu[::-1]]
+        q_w_l_pl = [origin_xd -w/2.- max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_w_l]
+        q_w_r_pl = [origin_xd +w/2.+ max([h_l,h_r])/5.*np.abs(x)/max([q43_x(h_r),q12_x(h_l),max(q23_x(np.linspace(0.,w,21)))]) for x in q_w_r[::-1]]
+
+        q_fu[0] = q_fu_s[0]
+        q_fu[-1] = q_fu_s[-1]
+        q_w_l[0] = q_w_l_s[0]
+        q_w_l[-1] = q_w_l_s[-1]
+        q_w_r[0] = q_w_r_s[0]
+        q_w_r[-1] = q_w_r_s[-1]
+
+        #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+        A_w_r = np.zeros(num+1)
+        A_w_l = np.zeros(num+1)
+        A_fu = np.zeros(num)
+        
+        y_w_l_A =  np.linspace(origin_yd,origin_yd  + h_l,num+1).tolist()
+        y_w_r_A =  np.linspace(origin_yd,origin_yd  + h_r,num+1).tolist()
+        x_fu_A = np.linspace(origin_xd ,origin_xd+w,num).tolist()
+
+        for x in range(0,num):
+            A_w_r[x] += t_w_r*h_r/(num -1)/6.*(2 + q43_x(y_w_r_A[x+1] - origin_yd)/max([1e-05,q43_x(y_w_r_A[x] - origin_yd)]))
+            A_w_r[x +1] += t_w_r*h_r/(num -1)/6.*(2 + q43_x(y_w_r_A[x] - origin_yd)/max([1e-05,q43_x(y_w_r_A[x+1] - origin_yd)]))
+            
+            A_w_l[x] += t_w_l*h_l/(num -1)/6.*(2 + q12_x(y_w_l_A[x+1] - origin_yd)/min([-1e-05,q12_x(y_w_l_A[x] - origin_yd)]))
+            A_w_l[x +1] += t_w_l*h_l/(num -1)/6.*(2 + q12_x(y_w_l_A[x] - origin_yd)/min([-1e-05,q12_x(y_w_l_A[x+1] - origin_yd)]))
+
+        for x in range(0, num-1):
+            A_fu[x] += t_f_u*w/(num+1)/6.*(2 + q23_x(x_fu_A[x+1] - origin_xd)/q23_x(x_fu_A[x] - origin_xd))
+            A_fu[x+1] += t_f_u*w/(num+1)/6.*(2 + q23_x(x_fu_A[x] - origin_xd)/q23_x(x_fu_A[x+1] - origin_xd))
+        
+        # print(A_fu)
+        A_w_r[-1] = A_w_r[-1] + A_fu[-1]
+        A_w_l[-1] = A_w_l[-1] + A_fu[0]
+        A_fu[-1] = A_w_r[-1]
+        A_fu[0] = A_w_l[-1]
+
+        A_w_r = A_w_r.tolist()
+        A_w_l = A_w_l.tolist()
+        A_fu = A_fu.tolist()
+
+        res_A = A_w_l + A_fu + A_w_r
+        res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+
+
+        #Entitiy that plots the right-most (idealized) cross section
+        trace1b = go.Scatter(
+            x =  x_w_l + x_fu + x_w_r,
+            y =  y_w_l + y_fu + y_w_r[::-1],
+            mode='lines+markers',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
+            line=dict(color='grey'),
+            visible = [True if c is 0 else False][0])
+
+        #Entity that plots the discretized shear flow on the upper flange
+        trace2b = go.Scatter(
+            x= x_fu,
+            y= q_fu_pl,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_fu],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        #Entity that plots the discretized shear flow on the web
+        trace4b_l = go.Scatter(
+            x=q_w_l_pl,
+            y=y_w_l,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_w_l],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        trace4b_r = go.Scatter(
+            x=q_w_r_pl,
+            y=y_w_r,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_w_r[::-1]],
+            #hovertemplate = '%{hovertext:.2f}',
+            fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
+
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1_sc, trace1b, trace2b, trace4b_l, trace4b_r]
+
+        data = data + data_temp
+
+    elif disc == 'N':
+        data_temp = [trace1, trace1_cg, trace1_na, trace2_l, trace4_l, trace4_r, trace1_sc]
+
+        data = data + data_temp
 
     #Define layout options of figure
     layout = go.Layout(
@@ -1935,7 +1982,7 @@ def gen_data_u_beam(V_x,V_y,t_f_u,t_w_l,t_w_r,h_l,h_r,w,num):
 
     return (data, layout)
 
-def gen_data_o_beam(V_y,V_x,rad,t,num):
+def gen_data_o_beam(V_y,V_x,rad,t,num,disc):
     
 
     #Calculate geometrical properties of section
@@ -1985,10 +2032,13 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
     c = 0
 
     #Set origin of coordinates for the left-most figure (non-idealized)
-    if w > max([h_l,h_r]):
-        origin_x = -(max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
-    else:
-        origin_x = -1.*max([h_l,h_r])
+    if disc == 'Y':
+        if w > max([h_l,h_r]):
+            origin_x = -(max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
+        else:
+            origin_x = -1.*max([h_l,h_r])
+    elif disc == 'N':
+        origin_x = 0.
     origin_y = 0.
 
     x_coord_o = origin_x + (rad + t/2.)*np.cos(theta)
@@ -2095,180 +2145,230 @@ def gen_data_o_beam(V_y,V_x,rad,t,num):
         visible=[True if c is 0 else False][0])
 
     trace3 = go.Scatter(
-        x = np.linspace(origin_x + rad - rad/4.,origin_x + rad + rad/4.,4),
-        y = np.linspace(origin_y + rad, origin_y + rad, 4),
+        x = np.linspace(origin_x + rad - rad/4.,origin_x + rad + rad/4.,2),
+        y = np.linspace(origin_y + rad, origin_y + rad, 2),
         name = 'Section Cut',
-        hoverinfo = 'name',
+        mode='lines',
+        hoverinfo = 'none',
         line = dict(
             color = ('black'),
             dash = 'dashdot'))
 
-    #Set the origin of coordinates for the right-most figure (idealized)
-    if w > max([h_l,h_r]):
-        origin_xd = (max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
-    else:
-        origin_xd = 1.*max([h_l,h_r])
+    if disc == 'Y':
 
-    origin_yd = rad
+        #Set the origin of coordinates for the right-most figure (idealized)
+        if w > max([h_l,h_r]):
+            origin_xd = (max([h_l,h_r])/w*(max([h_l,h_r]) - w) + w)
+        else:
+            origin_xd = 1.*max([h_l,h_r])
 
-    theta_d = np.linspace(0,2*np.pi,num+1).tolist()
+        origin_yd = rad
 
-    #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
-    x_fu = origin_xd + rad*np.cos(theta_d)
+        theta_d = np.linspace(0,2*np.pi,num+1).tolist()
 
-    y_fu = origin_yd + rad*np.sin(theta_d)
+        #Define the x and y coordinates of the right-most (idealized) cross section. The cross section is lumped to its midplane
+        x_fu = origin_xd + rad*np.cos(theta_d)
 
-    #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
-    x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
-    y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
+        y_fu = origin_yd + rad*np.sin(theta_d)
 
-    x_coord_d = list(itertools.chain.from_iterable(itertools.repeat(x_coord_o[x], 2) for x in range(len(x_coord_o))))
-    y_coord_d = list(itertools.chain.from_iterable(itertools.repeat(y_coord_o[x], 2) for x in range(len(y_coord_o))))
+        #Define x and y coordinates in a format so the discretized shear flow can be properly plotted
+        x_fu = list(itertools.chain.from_iterable(itertools.repeat(x_fu[x], 2) for x in range(len(x_fu))))
+        y_fu = list(itertools.chain.from_iterable(itertools.repeat(y_fu[x], 2) for x in range(len(y_fu))))
 
-    rad_int = list(itertools.chain.from_iterable(itertools.repeat(theta_d[x], 2) for x in range(len(theta_d))))
+        x_coord_d = list(itertools.chain.from_iterable(itertools.repeat(x_coord_o[x], 2) for x in range(len(x_coord_o))))
+        y_coord_d = list(itertools.chain.from_iterable(itertools.repeat(y_coord_o[x], 2) for x in range(len(y_coord_o))))
 
-    y_flange_u = q_rad
+        rad_int = list(itertools.chain.from_iterable(itertools.repeat(theta_d[x], 2) for x in range(len(theta_d))))
 
-    #Define discretized shear flow by averaging calculated flow on non-idealized cross section
-    q_fu_s =  [integrate.quad(y_flange_u,rad_int[2*x],rad_int[2*x+2])[0]/(rad_int[2*x + 2] - rad_int[2*x]) for x in range(int(len(rad_int)/2 -1))]
-    q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
+        y_flange_u = q_rad
 
-    q_fu_pl = [x*rad for x in q_fu]
+        #Define discretized shear flow by averaging calculated flow on non-idealized cross section
+        q_fu_s =  [integrate.quad(y_flange_u,rad_int[2*x],rad_int[2*x+2])[0]/(rad_int[2*x + 2] - rad_int[2*x]) for x in range(int(len(rad_int)/2 -1))]
+        q_fu = [0.] + [q_fu_s[int(x/2)] for x in range(int(len(x_fu)-2))] + [0.]
 
-    q_fu[0] = q_fu_s[0]
-    q_fu[-1] = q_fu_s[-1]
+        q_fu_pl = [x*rad for x in q_fu]
 
-    #Lines of code that smooth out the sharp peaks resulting from the direct discretization of the shear flow
-    theta_d = list(itertools.chain.from_iterable(itertools.repeat(theta_d[x], 2) for x in range(len(theta_d))))
+        q_fu[0] = q_fu_s[0]
+        q_fu[-1] = q_fu_s[-1]
 
-    side_angle = [np.arccos((x_fu[2*x+2] - x_fu[2*x+1])/(math.sqrt((x_fu[2*x+2] - x_fu[2*x+1])**2 + (y_fu[2*x+2] - y_fu[2*x+1])**2)))*180/np.pi for x in range(int(len(x_fu)/2 -1))]
+        #Lines of code that smooth out the sharp peaks resulting from the direct discretization of the shear flow
+        theta_d = list(itertools.chain.from_iterable(itertools.repeat(theta_d[x], 2) for x in range(len(theta_d))))
 
-    side_angle = [side_angle[x +1] for x in range(int(len(side_angle)/2))] + [side_angle[int(len(side_angle)/2) + x] for x in range(int(len(side_angle)/2))]
+        side_angle = [np.arccos((x_fu[2*x+2] - x_fu[2*x+1])/(math.sqrt((x_fu[2*x+2] - x_fu[2*x+1])**2 + (y_fu[2*x+2] - y_fu[2*x+1])**2)))*180/np.pi for x in range(int(len(x_fu)/2 -1))]
 
-    side_angle = [0.] + side_angle + [0.]
+        side_angle = [side_angle[x +1] for x in range(int(len(side_angle)/2))] + [side_angle[int(len(side_angle)/2) + x] for x in range(int(len(side_angle)/2))]
 
-    sign_angle = [np.sign(y_fu[2*x+2] - y_fu[2*x+1]) for x in range(int(len(x_fu)/2 -1))]
-    sign_angle = [sign_angle[x +1] for x in range(int(len(sign_angle)/2))] + [-sign_angle[int(len(sign_angle)/2) + x] for x in range(int(len(sign_angle)/2))]
-    sign_angle = [0.] + sign_angle + [0.]
+        side_angle = [0.] + side_angle + [0.]
 
-
-    y_par_coord_d = [y_fu[x] - q_fu[x]*np.sin(theta_d[x])*100*rad/V_y  for x in range(len(q_fu) - 1)]
-    x_par_coord_d = [x_fu[x] - q_fu[x]*np.cos(theta_d[x])*100*rad/V_y  for x in range(len(q_fu) - 1)]
-
-    x_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*100*rad/V_y*np.sin(2*np.pi/num)*(-np.abs(np.cos(side_angle[x]*np.pi/180.)))  for x in range(int(len(x_fu)/2))]
-    y_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*100*rad/V_y*np.sin(2*np.pi/num)*np.sin(side_angle[x]*np.pi/180.)*sign_angle[x]  for x in range(int(len(x_fu)/2))]
+        sign_angle = [np.sign(y_fu[2*x+2] - y_fu[2*x+1]) for x in range(int(len(x_fu)/2 -1))]
+        sign_angle = [sign_angle[x +1] for x in range(int(len(sign_angle)/2))] + [-sign_angle[int(len(sign_angle)/2) + x] for x in range(int(len(sign_angle)/2))]
+        sign_angle = [0.] + sign_angle + [0.]
 
 
-    for x in range(int(len(x_fu)/4)):
-        x_par_coord_d[2*x+1] = x_par_coord_d[2*x+1] + x_par_coord_dx[x]
-        y_par_coord_d[2*x+1] = y_par_coord_d[2*x+1] + y_par_coord_dx[x]
-    for x in range(int(len(x_fu)/4) -1):
-        x_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] = x_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] + x_par_coord_dx[int(len(x_par_coord_dx)/2) + x]
-        y_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] = y_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] + y_par_coord_dx[int(len(x_par_coord_dx)/2) + x]
+        y_par_coord_d = [y_fu[x] - q_fu[x]*np.sin(theta_d[x])*100*rad/V_y  for x in range(len(q_fu) - 1)]
+        x_par_coord_d = [x_fu[x] - q_fu[x]*np.cos(theta_d[x])*100*rad/V_y  for x in range(len(q_fu) - 1)]
 
-    #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
-    A_rad = np.zeros(num+1)
-    
-    theta_d_A = np.linspace(0,2*np.pi,num+1).tolist()
+        x_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*100*rad/V_y*np.sin(2*np.pi/num)*(-np.abs(np.cos(side_angle[x]*np.pi/180.)))  for x in range(int(len(x_fu)/2))]
+        y_par_coord_dx = [np.abs(q_fu[2*x + 1] - q_fu[2*x])*100*rad/V_y*np.sin(2*np.pi/num)*np.sin(side_angle[x]*np.pi/180.)*sign_angle[x]  for x in range(int(len(x_fu)/2))]
 
-    for x in range(0,num):
-        A_rad[x] += t*(2*np.pi*rad)/(num -1)/6.*(2 + q_rad(theta_d_A[x+1])/min([-1e-05,q_rad(theta_d_A[x])]))
-        A_rad[x +1] += t*(2*np.pi*rad)/(num -1)/6.*(2 + q_rad(theta_d_A[x])/min([-1e-05,q_rad(theta_d_A[x+1])]))
+
+        for x in range(int(len(x_fu)/4)):
+            x_par_coord_d[2*x+1] = x_par_coord_d[2*x+1] + x_par_coord_dx[x]
+            y_par_coord_d[2*x+1] = y_par_coord_d[2*x+1] + y_par_coord_dx[x]
+        for x in range(int(len(x_fu)/4) -1):
+            x_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] = x_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] + x_par_coord_dx[int(len(x_par_coord_dx)/2) + x]
+            y_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] = y_par_coord_d[int(len(x_par_coord_d)/2) + 2*x + 1] + y_par_coord_dx[int(len(x_par_coord_dx)/2) + x]
+
+        #Calculate the corresponding boom areas based on the ratios of shear flow between two adjacent booms
+        A_rad = np.zeros(num+1)
         
-    A_rad = A_rad.tolist()
+        theta_d_A = np.linspace(0,2*np.pi,num+1).tolist()
 
-    res_A = A_rad
-    res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
+        for x in range(0,num):
+            A_rad[x] += t*(2*np.pi*rad)/(num -1)/6.*(2 + q_rad(theta_d_A[x+1])/min([-1e-05,q_rad(theta_d_A[x])]))
+            A_rad[x +1] += t*(2*np.pi*rad)/(num -1)/6.*(2 + q_rad(theta_d_A[x])/min([-1e-05,q_rad(theta_d_A[x+1])]))
+            
+        A_rad = A_rad.tolist()
 
-
-    #Entitiy that plots the right-most (idealized) cross section
-    trace1b = go.Scatter(
-        x =  x_fu,
-        y =  y_fu,
-        mode='lines+markers',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
-        line=dict(color='grey'),
-        visible = [True if c is 0 else False][0])
-
-    #Entity that plots the discretized shear flow on the upper flange
-    trace2b = go.Scatter(
-        x= x_par_coord_d,
-        y= y_par_coord_d,
-        mode='lines',
-        name='Shear flow [N/mm]',
-        hoverinfo = 'text',
-        hoveron = 'points',
-        hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_fu],
-        #hovertemplate = '%{hovertext:.2f}',
-        # fill = 'toself',
-        line=dict(color='red'),
-        visible = [True if c is 0 else False][0])
-
-    trace2b_f = go.Scatter(
-        x= x_fu + x_par_coord_d[::-1],
-        y= y_fu + y_par_coord_d[::-1],
-        mode='lines',
-        fill = 'toself',
-        hoveron = 'fills',
-        hoverinfo='skip',
-        # fillcolor = 'red',
-        line=dict(color='red'),
-        visible=[True if c is 0 else False][0])
-
-    trace3b = go.Scatter(
-        x = np.linspace(origin_xd + rad - rad/4.,origin_xd + rad + rad/4.,4),
-        y = np.linspace(origin_yd, origin_yd, 4),
-        name = 'Section Cut',
-        hoverinfo = 'name',
-        line = dict(
-            color = ('black'),
-            dash = 'dashdot'))
+        res_A = A_rad
+        res_A = list(itertools.chain.from_iterable(itertools.repeat(res_A[x], 2) for x in range(len(res_A))))
 
 
-    #Add all the plotting entities to a data list that maps the plotting
-    data_temp = [trace1_i, trace2_f, trace2_l, trace1,trace1_sc, trace1_cg,trace1_na, trace3,trace2b, trace2b_f, trace1b, trace3b]
+        #Entitiy that plots the right-most (idealized) cross section
+        trace1b = go.Scatter(
+            x =  x_fu,
+            y =  y_fu,
+            mode='lines+markers',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['Ab = {0:.0f} mm2'.format(k) for k in res_A],
+            line=dict(color='grey'),
+            visible = [True if c is 0 else False][0])
 
-    data = data + data_temp
-    c = c +1
+        #Entity that plots the discretized shear flow on the upper flange
+        trace2b = go.Scatter(
+            x= x_par_coord_d,
+            y= y_par_coord_d,
+            mode='lines',
+            name='Shear flow [N/mm]',
+            hoverinfo = 'text',
+            hoveron = 'points',
+            hovertext = ['{0:.2f} N/mm'.format(np.abs(k)) for k in q_fu],
+            #hovertemplate = '%{hovertext:.2f}',
+            # fill = 'toself',
+            line=dict(color='red'),
+            visible = [True if c is 0 else False][0])
 
-    theta_arr = np.linspace(0,2*np.pi,20)
+        trace2b_f = go.Scatter(
+            x= x_fu + x_par_coord_d[::-1],
+            y= y_fu + y_par_coord_d[::-1],
+            mode='lines',
+            fill = 'toself',
+            hoveron = 'fills',
+            hoverinfo='skip',
+            # fillcolor = 'red',
+            line=dict(color='red'),
+            visible=[True if c is 0 else False][0])
 
-    annotation_list = []
-    for x in theta_arr:
-        annotation_list_temp = dict(x = origin_x + rad*np.cos(x) ,y = origin_y + rad + rad*np.sin(x),xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax= 15.*np.sin(x), ay = 15.*np.cos(x))
-        annotation_list.append(annotation_list_temp)
+        trace3b = go.Scatter(
+            x = np.linspace(origin_xd + rad - rad/4.,origin_xd + rad + rad/4.,2),
+            y = np.linspace(origin_yd, origin_yd, 2),
+            name = 'Section Cut',
+            mode='lines',
+            hoverinfo = 'none',
+            line = dict(
+                color = ('black'),
+                dash = 'dashdot'))
 
 
-    #Define layout options of figure
-    layout = go.Layout(
-        showlegend=False,
-        hovermode= 'closest',
-        #Add annotations with arrows indicating the shear flow direction and the shear load application which are proportional to the cross-section size
-        annotations = annotation_list + 
-                     
-                       [dict(x = origin_x - rad + x_sc, y = origin_y + rad + 0.05*rad*2, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
-      #Define axes visibility properties
-        xaxis=dict(
-            autorange=True,
-            showgrid=False,
-            zeroline=False,
-            showline=False,
-            ticks='',
-            showticklabels=False
-        ),
-        yaxis=dict(
-            autorange=True,
-            showgrid=False,
-            zeroline=False,
-            showline=False,
-            ticks='',
-            scaleanchor="x", 
-            scaleratio=1,
-            showticklabels=False
+        #Add all the plotting entities to a data list that maps the plotting
+        data_temp = [trace1_i, trace2_f, trace2_l, trace1,trace1_sc, trace1_cg,trace1_na, trace3,trace2b, trace2b_f, trace1b, trace3b]
+
+        data = data + data_temp
+
+        theta_arr = np.linspace(0,2*np.pi,20)
+
+        annotation_list = []
+        for x in theta_arr:
+            annotation_list_temp = dict(x = origin_x + rad*np.cos(x) ,y = origin_y + rad + rad*np.sin(x),xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax= 15.*np.sin(x), ay = 15.*np.cos(x))
+            annotation_list.append(annotation_list_temp)
+
+
+        #Define layout options of figure
+        layout = go.Layout(
+            showlegend=False,
+            hovermode= 'closest',
+            #Add annotations with arrows indicating the shear flow direction and the shear load application which are proportional to the cross-section size
+            annotations = annotation_list + 
+                         
+                           [dict(x = origin_x - rad + x_sc, y = origin_y + rad + 0.05*rad*2, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ),
+                            dict(x = origin_x + rad + rad/2., y = origin_y + rad , xref = "x", yref = "y", text = "Slit",  font = dict( color = "black",  size = 14 ),showarrow = False, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ),
+                            dict(x = origin_xd + rad + rad/2., y = origin_yd , xref = "x", yref = "y", text = "Slit",  font = dict( color = "black",  size = 14 ),showarrow = False, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
+          
+          #Define axes visibility properties
+            xaxis=dict(
+                autorange=True,
+                showgrid=False,
+                zeroline=False,
+                showline=False,
+                ticks='',
+                showticklabels=False
+            ),
+            yaxis=dict(
+                autorange=True,
+                showgrid=False,
+                zeroline=False,
+                showline=False,
+                ticks='',
+                scaleanchor="x", 
+                scaleratio=1,
+                showticklabels=False
+            )
         )
-    )
+
+    elif disc == 'N':
+        data_temp = [trace1_i, trace2_f, trace2_l, trace1,trace1_sc, trace1_cg,trace1_na, trace3]
+
+        data = data + data_temp
+
+        theta_arr = np.linspace(0,2*np.pi,20)
+
+        annotation_list = []
+        for x in theta_arr:
+            annotation_list_temp = dict(x = origin_x + rad*np.cos(x) ,y = origin_y + rad + rad*np.sin(x),xref = "x", yref = "y", showarrow = True, arrowhead=2, arrowsize=1, arrowwidth=1, arrowcolor='red', ax= 15.*np.sin(x), ay = 15.*np.cos(x))
+            annotation_list.append(annotation_list_temp)
+
+
+        #Define layout options of figure
+        layout = go.Layout(
+            showlegend=False,
+            hovermode= 'closest',
+            #Add annotations with arrows indicating the shear flow direction and the shear load application which are proportional to the cross-section size
+            annotations = annotation_list + 
+                         
+                           [dict(x = origin_x - rad + x_sc, y = origin_y + rad + 0.05*rad*2, xref = "x", yref = "y", text = "V",  font = dict( color = "black",  size = 14 ),showarrow = True, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ),
+                            dict(x = origin_x + rad + rad/2., y = origin_y + rad , xref = "x", yref = "y", text = "Slit",  font = dict( color = "black",  size = 14 ),showarrow = False, arrowhead=1, arrowsize=1.5, arrowwidth=1, arrowcolor='black', ax=0., ay= -40, xanchor = "center" ) ],
+          
+          #Define axes visibility properties
+            xaxis=dict(
+                autorange=True,
+                showgrid=False,
+                zeroline=False,
+                showline=False,
+                ticks='',
+                showticklabels=False
+            ),
+            yaxis=dict(
+                autorange=True,
+                showgrid=False,
+                zeroline=False,
+                showline=False,
+                ticks='',
+                scaleanchor="x", 
+                scaleratio=1,
+                showticklabels=False
+            )
+        )
 
     return (data, layout)
